@@ -316,6 +316,23 @@ for (const [code, voices, title] of [
 	if (seen.model !== 'sid') record(`lang-${code}`, 'model changed with the language');
 	if (seen.untranslated || !seen.badge) record(`lang-${code}`, 'empty translated element or missing badge');
 }
+// dispositions : les étiquettes suivent la disposition, les touches physiques jouent toujours les mêmes notes
+for (const [layout, labels, octave] of [
+	['azerty', 'Q Z S E D F T G Y H U J K', 'W / X'],
+	['qwertz', 'A W S E D F T G Z H U J K', 'Y / X'],
+	['qwerty', 'A W S E D F T G Y H U J K', 'Z / X'],
+]) {
+	await lang.selectOption('#layout', layout);
+	const help = await lang.evaluate(() => document.getElementById('keysHelp').textContent);
+	if (!help.includes(labels) || !help.includes(octave)) record(`layout-${layout}`, help);
+	const first = await lang.evaluate(() => document.querySelector('#keyboard [data-note]').textContent);
+	if (first !== labels[0]) record(`layout-${layout}`, `first key labelled ${first}`);
+}
+await lang.selectOption('#layout', 'azerty');
+await lang.selectOption('#lang', 'de');
+await lang.reload();
+if ((await lang.evaluate(() => document.getElementById('layout').value)) !== 'azerty') record('layout', 'choice lost on reload');
+await lang.selectOption('#layout', 'auto');
 await lang.selectOption('#lang', 'de');
 await lang.reload();
 if ((await lang.evaluate(() => document.documentElement.lang)) !== 'de') record('lang', 'choice lost on reload');

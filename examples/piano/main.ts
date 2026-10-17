@@ -47,6 +47,38 @@ const shortcuts = [
 	'KeyK',
 ];
 
+/** what each physical key prints on the layouts that differ from QWERTY (the keys play by position, `event.code`) */
+const layoutKeys: Record<string, Record<string, string>> = {
+	qwerty: {},
+	azerty: { KeyA: 'Q', KeyW: 'Z', KeyZ: 'W' },
+	qwertz: { KeyY: 'Z', KeyZ: 'Y' },
+};
+const layoutSelect = element<HTMLSelectElement>('layout');
+const layoutStorage = 'mwg-retro-audio-demo-layout';
+let layoutMap: { get(code: string): string | undefined } | undefined;
+/** the layout to assume when the browser cannot tell: from the language of the browser */
+function guessedLayout(): string {
+	const language = (navigator.languages?.[0] ?? navigator.language ?? 'en').toLowerCase();
+	if (language.startsWith('fr')) return 'azerty';
+	return ['de', 'cs', 'sk', 'hu', 'sl', 'hr'].includes(language.slice(0, 2)) ? 'qwertz' : 'qwerty';
+}
+/** the letter printed on the physical key `code` ('KeyA' is the key left of S on every layout) */
+function keyLabel(code: string): string {
+	if (layoutSelect.value === 'auto' && layoutMap) return (layoutMap.get(code) ?? code.slice(3)).toUpperCase();
+	const layout = layoutSelect.value === 'auto' ? guessedLayout() : layoutSelect.value;
+	return layoutKeys[layout]?.[code] ?? code.slice(3);
+}
+function paintKeysHelp(): void {
+	element('keysHelp').textContent = t('keysHelp', {
+		keys: shortcuts.map(keyLabel).join(' '),
+		octaveKeys: `${keyLabel('KeyZ')} / ${keyLabel('KeyX')}`,
+	});
+}
+function paintLayout(): void {
+	paintKeysHelp();
+	drawKeyboard();
+}
+
 function paintNotes(): void {
 	for (const key of keyboard.querySelectorAll<HTMLButtonElement>('[data-note]')) {
 		const active = [...held.values()].includes(Number(key.dataset.note));
@@ -86,7 +118,7 @@ function drawKeyboard(): void {
 		button.dataset.note = String(note);
 		button.setAttribute('aria-label', `${names[note % 12]}${Math.floor(note / 12) - 1}`);
 		button.setAttribute('aria-pressed', 'false');
-		button.innerHTML = `<span>${offset < shortcuts.length ? shortcuts[offset].slice(3) : names[note % 12]}</span>`;
+		button.innerHTML = `<span>${offset < shortcuts.length ? keyLabel(shortcuts[offset]) : names[note % 12]}</span>`;
 		if (black) button.style.left = `${(white / 15) * 100}%`;
 		else white++;
 		button.addEventListener('pointerdown', (event) => {
@@ -509,6 +541,7 @@ function applyLanguage(code: Lang): void {
 	paintSong();
 	controls();
 	refreshMidiLabel();
+	paintKeysHelp();
 	status.value = t(said.key, said.values);
 }
 function refreshMidiLabel(): void {
@@ -518,4 +551,30 @@ function refreshMidiLabel(): void {
 langSelect.addEventListener('change', () => applyLanguage(langSelect.value as Lang), options);
 drawKeyboard();
 choose();
+try {
+	const saved = localStorage.getItem(layoutStorage);
+	if (saved && [...layoutSelect.options].some((option) => option.value === saved)) layoutSelect.value = saved;
+} catch {
+	// storage blocked: automatic layout
+}
+layoutSelect.addEventListener(
+	'change',
+	() => {
+		try {
+			localStorage.setItem(layoutStorage, layoutSelect.value);
+		} catch {
+			// not remembered
+		}
+		paintLayout();
+	},
+	options,
+);
 applyLanguage(initialLang());
+// Chromium can name the keys of the real layout (Dvorak, Bépo, Swiss...); elsewhere the guess above applies
+void (navigator as Navigator & { keyboard?: { getLayoutMap(): Promise<typeof layoutMap> } }).keyboard
+	?.getLayoutMap()
+	.then((map) => {
+		layoutMap = map;
+		paintLayout();
+	})
+	.catch(() => undefined);

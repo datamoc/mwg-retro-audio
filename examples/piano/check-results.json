@@ -18,7 +18,7 @@
 		{
 			"id": "tandy",
 			"name": "Tandy SN76489 — Tandy 1000, IBM PCjr",
-			"peak": 0.1271,
+			"peak": 0.1611,
 			"controls": 7
 		},
 		{
@@ -30,13 +30,13 @@
 		{
 			"id": "sid-8580",
 			"name": "MOS 8580 SID — Commodore 64 (révision tardive), Commodore 128",
-			"peak": 0.2012,
+			"peak": 0.1602,
 			"controls": 9
 		},
 		{
 			"id": "ym2203",
 			"name": "Yamaha YM2203 (OPN) — NEC PC-8801, NEC PC-9801 (carte 26K)",
-			"peak": 0.0963,
+			"peak": 0.0967,
 			"controls": 6
 		},
 		{
@@ -84,7 +84,7 @@
 		{
 			"id": "nes-apu",
 			"name": "NES APU NTSC — Nintendo NES / Famicom (NTSC)",
-			"peak": 0.0946,
+			"peak": 0.0752,
 			"controls": 8
 		},
 		{
@@ -114,7 +114,7 @@
 		{
 			"id": "namco163",
 			"name": "Namco 163 — Famicom (cartouche Namco)",
-			"peak": 0.1416,
+			"peak": 0.1002,
 			"controls": 8
 		},
 		{
@@ -132,7 +132,7 @@
 		{
 			"id": "opl2",
 			"name": "OPL2 — PC (AdLib)",
-			"peak": 0.1191,
+			"peak": 0.119,
 			"controls": 6
 		},
 		{
@@ -150,7 +150,7 @@
 		{
 			"id": "cms",
 			"name": "C/MS Game Blaster — PC (Game Blaster)",
-			"peak": 0.06,
+			"peak": 0.0607,
 			"controls": 8
 		},
 		{
@@ -174,19 +174,19 @@
 		{
 			"id": "gs1",
 			"name": "Yamaha GS-1",
-			"peak": 0.0706,
+			"peak": 0.0686,
 			"controls": 5
 		},
 		{
 			"id": "vl1",
 			"name": "Casio VL-1",
-			"peak": 0.1148,
+			"peak": 0.1097,
 			"controls": 6
 		},
 		{
 			"id": "dx7",
 			"name": "Yamaha DX7",
-			"peak": 0.2354,
+			"peak": 0.0505,
 			"controls": 14
 		},
 		{
@@ -198,19 +198,19 @@
 		{
 			"id": "dartmouth",
 			"name": "Dartmouth Digital Synthesizer",
-			"peak": 0.1799,
+			"peak": 0.1789,
 			"controls": 5
 		},
 		{
 			"id": "synclavier",
 			"name": "Synclavier",
-			"peak": 0.0886,
+			"peak": 0.091,
 			"controls": 6
 		},
 		{
 			"id": "la-synth",
 			"name": "Structure LA",
-			"peak": 0.0572,
+			"peak": 0.0555,
 			"controls": 5
 		},
 		{
@@ -276,7 +276,7 @@
 		{
 			"id": "simple:Synth",
 			"name": "Synth",
-			"peak": 0.0081,
+			"peak": 0.0083,
 			"controls": 1
 		}
 	],

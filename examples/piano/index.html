@@ -23,8 +23,8 @@ h2{font-size:1.2rem;margin:28px 0 8px}.chips{display:flex;gap:8px;flex-wrap:wrap
 <div class="toolbar"><label><span data-i18n="song"></span> <select id="song"></select></label><button id="play"></button><button id="stop" disabled data-i18n="stop"></button><label><input id="chain" type="checkbox" checked> <span data-i18n="chain"></span></label><label><span data-i18n="file"></span> <input id="file" type="file" accept=".mid,.midi,audio/midi"></label></div>
 <progress id="progress" value="0" max="1" data-i18n-aria="progress"></progress> <span id="clock" class="stamp"></span></section>
 <div id="keyboard" class="keyboard" data-i18n-aria="keyboardAria"></div>
-<p data-i18n="keysHelp"></p>
-<div class="toolbar"><label><span data-i18n="octave"></span> <input id="octave" type="number" min="0" max="7" value="4"></label><button id="midi" data-i18n="midiConnect"></button><label><span data-i18n="midiInput"></span> <select id="midiInput"><option value=""></option></select></label><button id="reset" data-i18n="reset"></button></div>
+<p id="keysHelp"></p>
+<div class="toolbar"><label><span data-i18n="octave"></span> <input id="octave" type="number" min="0" max="7" value="4"></label><label><span data-i18n="layout"></span> <select id="layout"><option value="auto" data-i18n="layoutAuto"></option><option value="qwerty">QWERTY</option><option value="azerty">AZERTY</option><option value="qwertz">QWERTZ</option></select></label><button id="midi" data-i18n="midiConnect"></button><label><span data-i18n="midiInput"></span> <select id="midiInput"><option value=""></option></select></label><button id="reset" data-i18n="reset"></button></div>
 <output id="status" role="status"></output>
 <h2 data-i18n="settings"></h2><div id="controls" class="controls"></div>
 <p class="meta" id="credits" data-i18n="credits"></p>
