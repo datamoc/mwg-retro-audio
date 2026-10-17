@@ -25,6 +25,10 @@ h2{font-size:1.2rem;margin:28px 0 8px}.chips{display:flex;gap:8px;flex-wrap:wrap
 <div id="keyboard" class="keyboard" data-i18n-aria="keyboardAria"></div>
 <p id="keysHelp"></p>
 <div class="toolbar"><label><span data-i18n="octave"></span> <input id="octave" type="number" min="0" max="7" value="4"></label><label><span data-i18n="layout"></span> <select id="layout"><option value="auto" data-i18n="layoutAuto"></option><option value="qwerty">QWERTY</option><option value="azerty">AZERTY</option><option value="qwertz">QWERTZ</option></select></label><button id="midi" data-i18n="midiConnect"></button><label><span data-i18n="midiInput"></span> <select id="midiInput"><option value=""></option></select></label><button id="reset" data-i18n="reset"></button></div>
+<section class="panel" id="recorder" hidden aria-labelledby="rec-title"><h2 id="rec-title" data-i18n="recTitle"></h2>
+<p class="meta" data-i18n="recHelp"></p>
+<div class="toolbar"><button id="recStart" data-i18n="recStart"></button><button id="recStop" data-i18n="recStop" disabled></button><button id="recPlay" data-i18n="recPlay" disabled></button><button id="recDownload" data-i18n="recDownload" disabled></button><button id="recClear" data-i18n="recClear" disabled></button></div>
+<p id="recStatus" class="stamp" role="status"></p></section>
 <output id="status" role="status"></output>
 <h2 data-i18n="settings"></h2><div id="controls" class="controls"></div>
 <p class="meta" id="credits" data-i18n="credits"></p>

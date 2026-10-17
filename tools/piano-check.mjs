@@ -266,6 +266,40 @@ await midiPage.evaluate(() => {
 	window.__midi.send(new Uint8Array([0xb0, 123, 0]));
 });
 if ((await activeCount(midiPage)) !== 0) record('midi', 'all-notes-off left active notes');
+// enregistrement MIDI : le panneau suit la connexion, la prise est rejouée et exportée en fichier .mid
+if (await midiPage.locator('#recorder').isHidden()) record('recorder', 'panel hidden while a MIDI input is selected');
+await midiPage.click('#recStart');
+await midiPage.evaluate(() => {
+	window.__midi.send(new Uint8Array([0x90, 60, 100]));
+});
+await midiPage.waitForTimeout(250);
+await midiPage.evaluate(() => {
+	window.__midi.send(new Uint8Array([0x80, 60, 0]));
+	window.__midi.send(new Uint8Array([0x90, 64, 80]));
+});
+await midiPage.waitForTimeout(250);
+await midiPage.click('#recStop');
+const recStatus = await midiPage.evaluate(() => document.getElementById('recStatus').textContent);
+if (!/2 notes/.test(recStatus)) record('recorder', `status after the take: ${recStatus}`);
+const [download] = await Promise.all([midiPage.waitForEvent('download'), midiPage.click('#recDownload')]);
+const saved = await readFile(await download.path());
+if (!download.suggestedFilename().endsWith('.mid') || String.fromCharCode(...saved.subarray(0, 4)) !== 'MThd')
+	record('recorder', `downloaded file is not a MIDI file (${download.suggestedFilename()})`);
+const hasNote = (note) => saved.some((byte, index) => byte === 0x90 && saved[index + 1] === note);
+if (!hasNote(60) || !hasNote(64)) record('recorder', 'the exported file lacks the recorded notes');
+await midiPage.click('#recPlay');
+let replayLevel = 0;
+for (let tries = 0; tries < 20 && replayLevel < 0.001; tries++) {
+	await midiPage.waitForTimeout(60);
+	replayLevel = await midiPage.evaluate(() => window.__pianoLevel());
+}
+if (replayLevel < 0.001) record('recorder', 'the replayed take made no sound');
+if (!(await midiPage.evaluate(() => document.getElementById('clock').textContent)).includes('Mon enregistrement'))
+	record('recorder', 'replay not shown in the transport');
+await midiPage.click('#stop');
+await midiPage.click('#recClear');
+if ((await midiPage.locator('#recPlay').isEnabled()) || !(await midiPage.locator('#recStart').isEnabled()))
+	record('recorder', 'buttons wrong after clearing');
 // déconnexion réelle de l'entrée : statechange, plus aucune sélection, aucune note bloquée
 await midiPage.evaluate(() => {
 	window.__midi.send(new Uint8Array([0x90, 70, 100]));

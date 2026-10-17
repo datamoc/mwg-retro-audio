@@ -3,7 +3,8 @@ import type { Instrument } from '../../src/instruments/Instrument.ts';
 import { RetroStream } from '../../src/driver/RetroStream.ts';
 import { InstrumentMidiSink } from '../../src/instruments/InstrumentMidiSink.ts';
 import { isXmi, MidiPlayer, parseSmf, xmiToSmf } from '../../src/formats/midi.ts';
-import type { MidiSong } from '../../src/formats/midi.ts';
+import type { MidiEvent, MidiSong } from '../../src/formats/midi.ts';
+import { writeSmf } from '../../src/formats/midiWrite.ts';
 import type { RetroPlayer } from '../../src/players/Player.ts';
 import { Region } from '../../src/region.ts';
 import { describeMachines, featured, groupOrder, machines, names } from './machines.ts';
@@ -17,6 +18,9 @@ const octave = element<HTMLInputElement>('octave');
 const status = element<HTMLOutputElement>('status');
 const keyboard = element<HTMLDivElement>('keyboard');
 const held = new Map<string, number>();
+/** the take being recorded (times in seconds from the start of the recording) and the last finished one */
+let recording: { startedAt: number; events: MidiEvent[] } | undefined;
+let take: MidiEvent[] = [];
 let said: { key: Key; values: Record<string, string | number> } = { key: 'idle', values: {} };
 /** show a message in the status line, in the current language */
 function say(key: Key, values: Record<string, string | number> = {}): void {
@@ -88,6 +92,7 @@ function paintNotes(): void {
 }
 function press(source: string, note: number, velocity = 100): void {
 	if (!context || context.state !== 'running' || held.has(source)) return;
+	if (![...held.values()].includes(note)) recordMessage(0x90, note, velocity);
 	held.set(source, note);
 	instrument.noteOn(note, velocity);
 	paintNotes();
@@ -96,7 +101,10 @@ function release(source: string): void {
 	const note = held.get(source);
 	if (note === undefined) return;
 	held.delete(source);
-	if (![...held.values()].includes(note)) instrument.noteOff(note);
+	if (![...held.values()].includes(note)) {
+		instrument.noteOff(note);
+		recordMessage(0x80, note, 0);
+	}
 	paintNotes();
 }
 function panic(): void {
@@ -118,7 +126,9 @@ function drawKeyboard(): void {
 		button.dataset.note = String(note);
 		button.setAttribute('aria-label', `${names[note % 12]}${Math.floor(note / 12) - 1}`);
 		button.setAttribute('aria-pressed', 'false');
-		button.innerHTML = `<span>${offset < shortcuts.length ? keyLabel(shortcuts[offset]) : names[note % 12]}</span>`;
+		const label = document.createElement('span');
+		label.textContent = offset < shortcuts.length ? keyLabel(shortcuts[offset]) : names[note % 12];
+		button.append(label);
 		if (black) button.style.left = `${(white / 15) * 100}%`;
 		else white++;
 		button.addEventListener('pointerdown', (event) => {
@@ -454,6 +464,102 @@ window.addEventListener(
 );
 window.addEventListener('keyup', (event) => release(event.code), options);
 window.addEventListener('blur', panic, options);
+const recorder = element('recorder');
+const recButtons = {
+	start: element<HTMLButtonElement>('recStart'),
+	stop: element<HTMLButtonElement>('recStop'),
+	play: element<HTMLButtonElement>('recPlay'),
+	download: element<HTMLButtonElement>('recDownload'),
+	clear: element<HTMLButtonElement>('recClear'),
+};
+const noteCount = (events: readonly MidiEvent[]): number =>
+	events.filter((event) => event.status === 0x90 && event.data2 > 0).length;
+/** keep a message played now while a take is being recorded */
+function recordMessage(status: number, data1: number, data2: number): void {
+	if (!recording) return;
+	recording.events.push({ time: (performance.now() - recording.startedAt) / 1000, status, data1, data2 });
+	if (status === 0x90) paintRecorder();
+}
+/** the panel shows while a MIDI keyboard is selected, and as long as there is something to replay or save */
+function paintRecorder(): void {
+	recorder.hidden = !midiSelect.value && !recording && take.length === 0;
+	recButtons.start.disabled = !!recording;
+	recButtons.stop.disabled = !recording;
+	for (const button of [recButtons.play, recButtons.download, recButtons.clear])
+		button.disabled = !!recording || take.length === 0;
+	const duration = take.length ? take[take.length - 1].time : 0;
+	element('recStatus').textContent = recording
+		? t('recRecording', { notes: noteCount(recording.events) })
+		: take.length
+			? t('recTake', { notes: noteCount(take), duration: format(duration) })
+			: t('recEmpty');
+}
+async function startRecording(): Promise<void> {
+	if (recording || !(await ensureAudio())) return;
+	if (current) stopSong();
+	panic();
+	recording = { startedAt: performance.now(), events: [] };
+	paintRecorder();
+}
+/** end the take: notes and pedal still down are released at the end, and the silence before the first note is cut */
+function finishRecording(): void {
+	if (!recording) return;
+	const events = recording.events;
+	const end = (performance.now() - recording.startedAt) / 1000;
+	recording = undefined;
+	const open = new Set<number>();
+	let pedal = false;
+	for (const { status, data1, data2 } of events) {
+		if (status === 0x90 && data2 > 0) open.add(data1);
+		else if (status === 0x80) open.delete(data1);
+		else if (status === 0xb0) pedal = data2 >= 64;
+	}
+	for (const note of open) events.push({ time: end, status: 0x80, data1: note, data2: 0 });
+	if (pedal) events.push({ time: end, status: 0xb0, data1: 64, data2: 0 });
+	if (noteCount(events) === 0) {
+		take = [];
+		say('recNone');
+	} else {
+		const start = events[0].time;
+		take = events.map((event) => ({ ...event, time: event.time - start }));
+		say('recTake', { notes: noteCount(take), duration: format(take[take.length - 1].time) });
+	}
+	paintRecorder();
+}
+/** the take replays through the song player: same sound, same model switching to compare */
+async function replayTake(): Promise<void> {
+	if (!take.length) return;
+	customSong = { song: { events: take, duration: take[take.length - 1].time }, title: t('recSong') };
+	buildSongList();
+	await playSong(-1);
+}
+function downloadTake(): void {
+	if (!take.length) return;
+	const stamp = new Date().toISOString().slice(0, 16).replace(/[-:]/g, '').replace('T', '-');
+	const name = `mwg-recording-${stamp}.mid`;
+	const url = URL.createObjectURL(new Blob([writeSmf(take, { title: 'mwg-retro-audio' })], { type: 'audio/midi' }));
+	const link = document.createElement('a');
+	link.href = url;
+	link.download = name;
+	document.body.append(link);
+	link.click();
+	link.remove();
+	setTimeout(() => URL.revokeObjectURL(url), 10_000);
+	say('recSaved', { name });
+}
+recButtons.start.addEventListener('click', () => void startRecording(), options);
+recButtons.stop.addEventListener('click', finishRecording, options);
+recButtons.play.addEventListener('click', () => void replayTake(), options);
+recButtons.download.addEventListener('click', downloadTake, options);
+recButtons.clear.addEventListener(
+	'click',
+	() => {
+		take = [];
+		paintRecorder();
+		say('recEmpty');
+	},
+	options,
+);
 let midiAccess: MIDIAccess | undefined;
 const midiSelect = element<HTMLSelectElement>('midiInput');
 function refreshMidi(): void {
@@ -469,6 +575,8 @@ function refreshMidi(): void {
 }
 function bindMidi(): void {
 	panic();
+	if (!midiSelect.value) finishRecording();
+	paintRecorder();
 	for (const input of midiAccess?.inputs.values() ?? []) {
 		input.onmidimessage =
 			input.id !== midiSelect.value
@@ -480,8 +588,10 @@ function bindMidi(): void {
 						const source = `midi:${command & 15}:${note}`;
 						if (kind === 0x90 && velocity > 0) press(source, note, velocity);
 						else if (kind === 0x80 || kind === 0x90) release(source);
-						else if (kind === 0xb0 && note === 64) instrument.sustain(velocity >= 64);
-						else if (kind === 0xb0 && (note === 120 || note === 123)) panic();
+						else if (kind === 0xb0 && note === 64) {
+							instrument.sustain(velocity >= 64);
+							recordMessage(0xb0, 64, velocity);
+						} else if (kind === 0xb0 && (note === 120 || note === 123)) panic();
 					};
 	}
 }
@@ -542,6 +652,7 @@ function applyLanguage(code: Lang): void {
 	controls();
 	refreshMidiLabel();
 	paintKeysHelp();
+	paintRecorder();
 	status.value = t(said.key, said.values);
 }
 function refreshMidiLabel(): void {

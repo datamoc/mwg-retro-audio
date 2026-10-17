@@ -18,7 +18,7 @@
 		{
 			"id": "tandy",
 			"name": "Tandy SN76489 — Tandy 1000, IBM PCjr",
-			"peak": 0.1611,
+			"peak": 0.1271,
 			"controls": 7
 		},
 		{
@@ -30,13 +30,13 @@
 		{
 			"id": "sid-8580",
 			"name": "MOS 8580 SID — Commodore 64 (révision tardive), Commodore 128",
-			"peak": 0.1602,
+			"peak": 0.2012,
 			"controls": 9
 		},
 		{
 			"id": "ym2203",
 			"name": "Yamaha YM2203 (OPN) — NEC PC-8801, NEC PC-9801 (carte 26K)",
-			"peak": 0.0967,
+			"peak": 0.0963,
 			"controls": 6
 		},
 		{
@@ -84,7 +84,7 @@
 		{
 			"id": "nes-apu",
 			"name": "NES APU NTSC — Nintendo NES / Famicom (NTSC)",
-			"peak": 0.0752,
+			"peak": 0.0946,
 			"controls": 8
 		},
 		{
@@ -114,7 +114,7 @@
 		{
 			"id": "namco163",
 			"name": "Namco 163 — Famicom (cartouche Namco)",
-			"peak": 0.1002,
+			"peak": 0.1,
 			"controls": 8
 		},
 		{
@@ -132,7 +132,7 @@
 		{
 			"id": "opl2",
 			"name": "OPL2 — PC (AdLib)",
-			"peak": 0.119,
+			"peak": 0.1191,
 			"controls": 6
 		},
 		{
@@ -150,7 +150,7 @@
 		{
 			"id": "cms",
 			"name": "C/MS Game Blaster — PC (Game Blaster)",
-			"peak": 0.0607,
+			"peak": 0.06,
 			"controls": 8
 		},
 		{
@@ -174,19 +174,19 @@
 		{
 			"id": "gs1",
 			"name": "Yamaha GS-1",
-			"peak": 0.0686,
+			"peak": 0.0706,
 			"controls": 5
 		},
 		{
 			"id": "vl1",
 			"name": "Casio VL-1",
-			"peak": 0.1097,
+			"peak": 0.1148,
 			"controls": 6
 		},
 		{
 			"id": "dx7",
 			"name": "Yamaha DX7",
-			"peak": 0.0505,
+			"peak": 0.2354,
 			"controls": 14
 		},
 		{
@@ -216,7 +216,7 @@
 		{
 			"id": "ai-synth",
 			"name": "Structure AI",
-			"peak": 0.0542,
+			"peak": 0.0544,
 			"controls": 5
 		},
 		{
@@ -228,7 +228,7 @@
 		{
 			"id": "simple:Piano",
 			"name": "Piano",
-			"peak": 0.0206,
+			"peak": 0.02,
 			"controls": 1
 		},
 		{
@@ -246,7 +246,7 @@
 		{
 			"id": "simple:Guitar",
 			"name": "Guitar",
-			"peak": 0.0097,
+			"peak": 0.0099,
 			"controls": 1
 		},
 		{
@@ -276,7 +276,7 @@
 		{
 			"id": "simple:Synth",
 			"name": "Synth",
-			"peak": 0.0083,
+			"peak": 0.008,
 			"controls": 1
 		}
 	],

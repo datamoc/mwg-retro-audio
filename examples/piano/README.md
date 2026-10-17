@@ -82,6 +82,19 @@ pas une comparaison à l’oreille.
   CC BY-SA 4.0) ; conservé à la demande de l'auteur du projet. Le badge « powered by mwg » vient de
   `pontifex/assets/powered-by-mwg.svg`.
 
+## Enregistrement MIDI
+
+Quand une entrée MIDI est choisie, un panneau « Enregistrement MIDI » apparaît :
+« Enregistrer » garde les notes jouées (clavier MIDI, souris, clavier d'ordinateur)
+et la pédale de sustain ; « Terminer » coupe le silence avant la première note et
+relâche les notes restées enfoncées ; « Réécouter » rejoue la prise sur le modèle
+choisi (changer de modèle pour comparer) ; « Télécharger .mid » exporte un fichier
+MIDI standard (format 0, 480 pulsations par noire, 120 battements par minute) écrit
+par `writeSmf` (`src/formats/midiWrite.ts`). La prise reste disponible après la
+déconnexion du clavier ; « Effacer » la supprime. Elle n'est conservée qu'en mémoire
+de la page. Validé par `tools/piano-check.mjs` avec le MIDI simulé ; aucun clavier
+physique n'a encore été essayé.
+
 ## Page autonome
 
 `npm run build:demo` génère `examples/piano/synth-demo.html` : un seul fichier
