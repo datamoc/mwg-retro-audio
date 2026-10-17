@@ -235,9 +235,12 @@ class RadPlayer {
 			this.description = text;
 		}
 		for (;;) {
+			// every table is read inside the file: a missing terminator is an error, never an endless loop
+			if (s >= d.length) throw new RangeError('RAD: truncated instrument table');
 			const instNum = d[s++];
 			if (instNum === 0) break;
 			const inst = this.instruments[instNum - 1];
+			if (!inst) throw new RangeError(`RAD: invalid instrument number ${instNum}`);
 			if (this.version >= 2) {
 				const nameLen = d[s++];
 				inst.name = String.fromCharCode(...d.subarray(s, s + nameLen));
@@ -279,11 +282,13 @@ class RadPlayer {
 				s += 11;
 			}
 		}
+		if (s >= d.length) throw new RangeError('RAD: truncated order list');
 		this.orderListSize = d[s++];
 		this.orderList = s;
 		s += this.orderListSize;
 		if (this.version >= 2) {
 			for (;;) {
+				if (s >= d.length) break;
 				const t = d[s++];
 				if (t >= 100) break;
 				const size = d[s] | (d[s + 1] << 8);
@@ -427,7 +432,7 @@ class RadPlayer {
 	private skipToLine(trk: number, lineNum: number, chanRiff: boolean): number {
 		const d = this.d;
 		for (;;) {
-			if (trk < 0) return -1;
+			if (trk < 0 || trk >= d.length) return -1;
 			const lineId = d[trk];
 			if ((lineId & 0x7f) >= lineNum) return trk;
 			if (lineId & 0x80) break;
@@ -438,7 +443,7 @@ class RadPlayer {
 				if (this.version >= 2) trk += NOTE_SIZE[(chanId >> 4) & 7];
 				else if (d[trk + 1] & 0xf) trk += 3;
 				else trk += 2;
-			} while (!(chanId & 0x80) && !chanRiff);
+			} while (!(chanId & 0x80) && !chanRiff && trk < d.length);
 		}
 		return -1;
 	}
@@ -468,7 +473,7 @@ class RadPlayer {
 					'none',
 					0,
 				);
-			} while (!last);
+			} while (!last && trk < this.d.length);
 			if (lineId & 0x80) trk = -1;
 			this.track = trk;
 		}
@@ -734,7 +739,7 @@ class RadPlayer {
 						'iriff',
 						col > 0 ? (col - 1) & 3 : 0,
 					);
-				} while (!last);
+				} while (!last && trk < d.length);
 			}
 			if (riff.updated) return;
 			riff.updated = true;

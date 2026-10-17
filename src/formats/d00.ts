@@ -154,6 +154,7 @@ export function parseD00(file: Uint8Array, options: { subsong?: number; maxSecon
 	}
 	if (version > 4 || !subsongs) throw new Error('unsupported D00 version');
 	if (version === 0) speedHz = 70;
+	if (!(speedHz > 0)) throw new Error('invalid D00 speed');
 	const spfx = version === 4 ? extraPtr : -1;
 	const levpuls = version === 1 || version === 2 ? extraPtr : -1;
 	void infoptr;
@@ -333,8 +334,16 @@ export function parseD00(file: Uint8Array, options: { subsong?: number; maxSecon
 			let guard = 0;
 			let needOrder = true;
 			let stop = false;
+			// an order position met twice before any note was read is a jump loop with no music in it: the channel ends
+			const visited = new Set<number>();
 			while (needOrder && guard++ < 10000) {
 				needOrder = false;
+				if (visited.has(ch.ordpos)) {
+					ch.seqend = 1;
+					stop = true;
+					break;
+				}
+				visited.add(ch.ordpos);
 				if (ch.order < 0 || ch.order + (ch.ordpos + 1) * 2 > size) {
 					ch.seqend = 1;
 					stop = true;
