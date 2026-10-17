@@ -1,0 +1,11 @@
+hatari-ym is a TypeScript port of the sound emulation of Hatari, the Atari ST/STE/TT/Falcon emulator
+(https://www.hatari-emu.org/, https://github.com/hatari/hatari), version 2.5.0:
+  src/sound.c, src/psg.c, src/clocks_timings.c, src/cycles.c, src/includes/ym2149_fixed_vol.h
+
+Hatari is free software distributed under the GNU General Public License, version 2 or (at your option)
+any later version.  This port is a derivative work and is distributed under the same licence (see LICENSE).
+
+Credits of the original code, as stated in Hatari's sources:
+  - Nicolas Pomarede and the Hatari team: YM2149 emulation at 250 kHz, clock conversion, resampling
+  - David Savinkoff: 17 stage noise LFSR analysis, STF output low-pass filter, subsonic filter
+  - Paulo Simoes: the 16x16x16 YM2149 volume table measured on a real Atari ST (src/volumeTable.ts)

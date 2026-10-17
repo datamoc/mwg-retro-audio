@@ -1,0 +1,285 @@
+{
+	"browser": "chrome headless 155.0.8059.85 (playwright-core 1.64.1)",
+	"date": "2026-10-17",
+	"models": 46,
+	"peaks": [
+		{
+			"id": "ym2149",
+			"name": "Yamaha YM2149 — Atari ST, Amstrad CPC, MSX",
+			"peak": 0.1416,
+			"controls": 16
+		},
+		{
+			"id": "ay8910",
+			"name": "General Instrument AY-3-8910 — ZX Spectrum 128, Amstrad CPC, MSX",
+			"peak": 0.1611,
+			"controls": 16
+		},
+		{
+			"id": "tandy",
+			"name": "Tandy SN76489 — Tandy 1000, IBM PCjr",
+			"peak": 0.1271,
+			"controls": 7
+		},
+		{
+			"id": "sid",
+			"name": "MOS 6581 SID — Commodore 64",
+			"peak": 0.2652,
+			"controls": 9
+		},
+		{
+			"id": "sid-8580",
+			"name": "MOS 8580 SID — Commodore 64 (révision tardive), Commodore 128",
+			"peak": 0.2012,
+			"controls": 9
+		},
+		{
+			"id": "ym2203",
+			"name": "Yamaha YM2203 (OPN) — NEC PC-8801, NEC PC-9801 (carte 26K)",
+			"peak": 0.0963,
+			"controls": 6
+		},
+		{
+			"id": "ym2608",
+			"name": "Yamaha YM2608 (OPNA) — NEC PC-8801 FA, NEC PC-9801 (carte 86)",
+			"peak": 0.0963,
+			"controls": 6
+		},
+		{
+			"id": "ym2151",
+			"name": "Yamaha YM2151 (OPM) — Sharp X68000",
+			"peak": 0.0883,
+			"controls": 6
+		},
+		{
+			"id": "saa1099",
+			"name": "Philips SAA1099 — SAM Coupé",
+			"peak": 0.06,
+			"controls": 8
+		},
+		{
+			"id": "pc-speaker",
+			"name": "PC speaker — IBM PC",
+			"peak": 0.3,
+			"controls": 4
+		},
+		{
+			"id": "mockingboard",
+			"name": "Mockingboard — Apple II (carte Mockingboard)",
+			"peak": 0.0806,
+			"controls": 7
+		},
+		{
+			"id": "apple2-speaker",
+			"name": "Apple II (bascule $C030) — Apple II",
+			"peak": 0.3,
+			"controls": 3
+		},
+		{
+			"id": "sn76489",
+			"name": "SN76489 — BBC Micro, TI-99/4A, Master System",
+			"peak": 0.1191,
+			"controls": 7
+		},
+		{
+			"id": "nes-apu",
+			"name": "NES APU NTSC — Nintendo NES / Famicom (NTSC)",
+			"peak": 0.0946,
+			"controls": 8
+		},
+		{
+			"id": "nes-apu-pal",
+			"name": "NES APU PAL — Nintendo NES (PAL)",
+			"peak": 0.0736,
+			"controls": 8
+		},
+		{
+			"id": "vrc6",
+			"name": "Konami VRC6 — Famicom (cartouche Konami)",
+			"peak": 0.059,
+			"controls": 8
+		},
+		{
+			"id": "mmc5",
+			"name": "Nintendo MMC5 — NES / Famicom (cartouche MMC5)",
+			"peak": 0.0736,
+			"controls": 8
+		},
+		{
+			"id": "sunsoft5b",
+			"name": "Sunsoft 5B — Famicom (cartouche Sunsoft)",
+			"peak": 0.1416,
+			"controls": 7
+		},
+		{
+			"id": "namco163",
+			"name": "Namco 163 — Famicom (cartouche Namco)",
+			"peak": 0.1416,
+			"controls": 8
+		},
+		{
+			"id": "fds",
+			"name": "Famicom Disk System — Famicom Disk System",
+			"peak": 0.1125,
+			"controls": 9
+		},
+		{
+			"id": "ym2612",
+			"name": "Yamaha YM2612 (Mega Drive) — FM Towns, Mega Drive / Genesis",
+			"peak": 0.0963,
+			"controls": 6
+		},
+		{
+			"id": "opl2",
+			"name": "OPL2 — PC (AdLib)",
+			"peak": 0.1191,
+			"controls": 6
+		},
+		{
+			"id": "opl3",
+			"name": "OPL3 — PC (Sound Blaster Pro 2 / 16)",
+			"peak": 0.1191,
+			"controls": 6
+		},
+		{
+			"id": "sound-blaster",
+			"name": "Sound Blaster (OPL2) — PC (Sound Blaster 1.x / 2.0)",
+			"peak": 0.1191,
+			"controls": 6
+		},
+		{
+			"id": "cms",
+			"name": "C/MS Game Blaster — PC (Game Blaster)",
+			"peak": 0.06,
+			"controls": 8
+		},
+		{
+			"id": "pcm-dac",
+			"name": "Sample DAC (Covox) — PC (Covox Speech Thing)",
+			"peak": 0.3609,
+			"controls": 2
+		},
+		{
+			"id": "d50",
+			"name": "Roland D-50",
+			"peak": 0.0551,
+			"controls": 16
+		},
+		{
+			"id": "m1",
+			"name": "Korg M1",
+			"peak": 0.0854,
+			"controls": 8
+		},
+		{
+			"id": "gs1",
+			"name": "Yamaha GS-1",
+			"peak": 0.0706,
+			"controls": 5
+		},
+		{
+			"id": "vl1",
+			"name": "Casio VL-1",
+			"peak": 0.1148,
+			"controls": 6
+		},
+		{
+			"id": "dx7",
+			"name": "Yamaha DX7",
+			"peak": 0.2354,
+			"controls": 14
+		},
+		{
+			"id": "additive",
+			"name": "Bell Labs Digital Synthesizer",
+			"peak": 0.1789,
+			"controls": 5
+		},
+		{
+			"id": "dartmouth",
+			"name": "Dartmouth Digital Synthesizer",
+			"peak": 0.1799,
+			"controls": 5
+		},
+		{
+			"id": "synclavier",
+			"name": "Synclavier",
+			"peak": 0.0886,
+			"controls": 6
+		},
+		{
+			"id": "la-synth",
+			"name": "Structure LA",
+			"peak": 0.0572,
+			"controls": 5
+		},
+		{
+			"id": "ai-synth",
+			"name": "Structure AI",
+			"peak": 0.0542,
+			"controls": 5
+		},
+		{
+			"id": "mt32",
+			"name": "Roland MT-32 — PC, NEC PC-98",
+			"peak": 0.0564,
+			"controls": 1
+		},
+		{
+			"id": "simple:Piano",
+			"name": "Piano",
+			"peak": 0.0206,
+			"controls": 1
+		},
+		{
+			"id": "simple:Electric piano",
+			"name": "Electric piano",
+			"peak": 0.0106,
+			"controls": 1
+		},
+		{
+			"id": "simple:Organ",
+			"name": "Organ",
+			"peak": 0.0089,
+			"controls": 1
+		},
+		{
+			"id": "simple:Guitar",
+			"name": "Guitar",
+			"peak": 0.0097,
+			"controls": 1
+		},
+		{
+			"id": "simple:Bass",
+			"name": "Bass",
+			"peak": 0.0117,
+			"controls": 1
+		},
+		{
+			"id": "simple:Strings",
+			"name": "Strings",
+			"peak": 0.0098,
+			"controls": 1
+		},
+		{
+			"id": "simple:Brass",
+			"name": "Brass",
+			"peak": 0.0107,
+			"controls": 1
+		},
+		{
+			"id": "simple:Flute",
+			"name": "Flute",
+			"peak": 0.0111,
+			"controls": 1
+		},
+		{
+			"id": "simple:Synth",
+			"name": "Synth",
+			"peak": 0.0081,
+			"controls": 1
+		}
+	],
+	"midi": "simulé (fausse API Web MIDI) ; aucun clavier physique essayé",
+	"problems": []
+}

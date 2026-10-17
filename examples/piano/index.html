@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mwg-retro-audio</title>
+<style>
+*{box-sizing:border-box}body{background:#dce4ed;color:#18324e;font:16px/1.5 system-ui,sans-serif;margin:0;padding:32px}main{max-width:1050px;margin:auto}h1{font-size:2rem;font-weight:650}button,select,input{font:inherit}button,select{padding:8px 12px;border:1px solid #728ba3;border-radius:4px;background:#f5f8fc;color:#18324e}button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #a43e74;outline-offset:3px}.toolbar{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin:20px 0}.keyboard{display:flex;position:relative;height:180px;overflow:visible;margin:30px 0 12px;touch-action:none}.key{position:relative;flex:1;border-radius:0 0 5px 5px;padding:0;display:flex;align-items:end;justify-content:center;padding-bottom:12px;background:#fff;min-width:0;color:#234}.key.black{position:absolute;background:#203750;color:#fff;height:110px;z-index:1;width:3.7%;transform:translateX(-50%)}.key.active{background:#e8a940;color:#172c42}.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px 24px}.control{display:grid;gap:5px;padding:12px 0;border-bottom:1px solid #aabacb}.control input[type=range]{width:100%}.meta{color:#3b536d}output{display:block;min-height:1.5em}#description{max-width:80ch}button:disabled{opacity:.5}@media(max-width:600px){body{padding:16px}.key span{font-size:11px}.keyboard{height:140px}.key.black{height:88px}}
+h2{font-size:1.2rem;margin:28px 0 8px}.chips{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.chips button[aria-pressed=true]{background:#18324e;color:#fff;border-color:#18324e}.chips button.star{border-color:#a43e74;font-weight:650}.panel{background:#eef3f8;border:1px solid #aabacb;border-radius:6px;padding:4px 16px 14px;margin:20px 0}.panel h2{margin-top:12px}#progress{width:100%;max-width:520px;height:8px}.stamp{color:#3b536d;font-variant-numeric:tabular-nums}@media(prefers-color-scheme:dark){body{background:#101a26;color:#dbe6f2}button,select{background:#1b2b3d;color:#dbe6f2;border-color:#4b6580}.chips button[aria-pressed=true]{background:#dbe6f2;color:#101a26;border-color:#dbe6f2}.panel{background:#162434;border-color:#33495f}.meta,.stamp{color:#a9bbcd}.key{background:#f2f5f9}.key.black{background:#0b1522}.control{border-color:#33495f}}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}.top h1{margin:0}.brand{display:flex;flex-direction:column;align-items:flex-end;gap:8px}.badge{display:block;line-height:0}.badge svg{max-width:100%;height:auto;display:block}.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+<main>
+<header class="top"><h1 data-i18n="title"></h1><div class="brand"><a class="badge" href="https://datamoc.github.io/mwg/" target="_blank" rel="noopener noreferrer"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 196 38" width="196" height="38" role="img" aria-label="powered by mwg"> <rect width="196" height="38" rx="10" fill="#0b0e14"/> <text x="12" y="23.5" font-family="'JetBrains Mono','Cascadia Code',ui-monospace,Consolas,monospace" font-size="12.5" fill="#8b96a8">powered by</text> <rect x="88" y="8" width="22" height="22" rx="3" fill="#0057b7"/> <rect x="114" y="8" width="22" height="22" rx="3" fill="#ffd700"/> <text x="166" y="26" font-family="'JetBrains Mono','Cascadia Code',ui-monospace,Consolas,monospace" font-size="26" font-weight="700" letter-spacing="0.5" fill="#eef1f6" text-anchor="middle" textLength="46" lengthAdjust="spacingAndGlyphs">mwg</text> </svg></a><label class="lang"><span class="sr" data-i18n="langAria"></span><select id="lang" data-i18n-aria="langAria"></select></label></div></header>
+<div class="toolbar">
+<button id="audio" data-i18n="audio"></button>
+<label><span data-i18n="model"></span> <select id="model"></select></label>
+<label><span data-i18n="volume"></span> <input id="volume" type="range" min="0" max="1" step=".01" value=".6"></label>
+<button id="panic" data-i18n="panic"></button>
+</div>
+<div id="machines" class="chips" role="group" data-i18n-aria="byMachine"></div>
+<p id="description"></p><p id="info" class="meta"></p><p id="where" class="meta"></p>
+<div id="presets" class="chips" role="group" data-i18n-aria="presetsAria"></div>
+<section class="panel" aria-labelledby="auto-title"><h2 id="auto-title" data-i18n="autoTitle"></h2>
+<p class="meta" data-i18n="autoHelp"></p>
+<div class="toolbar"><label><span data-i18n="song"></span> <select id="song"></select></label><button id="play"></button><button id="stop" disabled data-i18n="stop"></button><label><input id="chain" type="checkbox" checked> <span data-i18n="chain"></span></label><label><span data-i18n="file"></span> <input id="file" type="file" accept=".mid,.midi,audio/midi"></label></div>
+<progress id="progress" value="0" max="1" data-i18n-aria="progress"></progress> <span id="clock" class="stamp"></span></section>
+<div id="keyboard" class="keyboard" data-i18n-aria="keyboardAria"></div>
+<p data-i18n="keysHelp"></p>
+<div class="toolbar"><label><span data-i18n="octave"></span> <input id="octave" type="number" min="0" max="7" value="4"></label><button id="midi" data-i18n="midiConnect"></button><label><span data-i18n="midiInput"></span> <select id="midiInput"><option value=""></option></select></label><button id="reset" data-i18n="reset"></button></div>
+<output id="status" role="status"></output>
+<h2 data-i18n="settings"></h2><div id="controls" class="controls"></div>
+<p class="meta" id="credits" data-i18n="credits"></p>
+</main><script type="module" src="./app.js"></script></html>

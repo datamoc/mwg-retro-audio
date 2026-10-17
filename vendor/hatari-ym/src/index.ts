@@ -1,0 +1,11 @@
+export { HatariYm, MACHINE_CLOCKS } from './ym2149.ts';
+export type { HatariYmOptions, LowPass, HighPass, Resample, Machine } from './ym2149.ts';
+export { readTrace, HATARI_TRACE_ORIGIN } from './trace.ts';
+export type { TraceData, YmEvent } from './trace.ts';
+export { renderTrace } from './render.ts';
+export type { RenderOptions } from './render.ts';
+export { renderRegisterFrames } from './ticks.ts';
+export type { TickRenderOptions } from './ticks.ts';
+export { writeWav } from './wav.ts';
+export { HatariYmChip, registerHatariYm } from './chip.ts';
+export type { HatariChipOptions } from './chip.ts';

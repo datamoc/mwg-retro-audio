@@ -1,0 +1,13 @@
+node_modules/
+dist/
+download/
+examples/*/app.js
+examples/*/app.js.map
+
+# local tooling state
+.coord-session
+.opencode/
+.remember/
+.claude/
+.playwright-mcp/
+*.png

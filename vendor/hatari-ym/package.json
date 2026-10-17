@@ -1,0 +1,38 @@
+{
+  "name": "hatari-ym",
+  "version": "0.1.0",
+  "description": "Bit-exact TypeScript port of Hatari's YM2149 / Atari ST sound chain",
+  "type": "module",
+  "license": "GPL-2.0-or-later",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p .",
+    "test": "node --test test/hatari-ym.test.ts test/chip.test.ts",
+    "validate": "node test/validate.ts",
+    "build": "tsc -p ."
+  },
+  "engines": {
+    "node": ">=22.18"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "typescript": "^7.0.2"
+  },
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "files": [
+    "dist/src",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    },
+    "./chip": {
+      "types": "./dist/src/chip.d.ts",
+      "default": "./dist/src/chip.js"
+    }
+  }
+}

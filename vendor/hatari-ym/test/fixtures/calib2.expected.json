@@ -1,0 +1,6 @@
+{
+  "name": "calib2",
+  "samples": 3305436,
+  "sha256": "857613792e6457a701062525411d0189eef7fcc40b7d6fda6a40953b122f0813",
+  "source": "Hatari 2.5.0 AVI audio (left channel = right channel)"
+}

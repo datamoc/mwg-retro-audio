@@ -1,0 +1,27 @@
+@datamoc/mw_retro_audio: third-party material and where it is used
+
+This package is MPL-2.0 (see LICENSE). The following files are written from, or reproduce data of, other projects.
+No ROM image and no binary of any other program is part of the package.
+
+src/formats/hsc.ts, src/formats/d00.ts, src/formats/rol.ts
+  Re-implementations of the behaviour of the HSC-Tracker, EdLib (D00) and AdLib Visual Composer replayers, written
+  after reading the AdPlug source (https://github.com/adplug/adplug, Simon Peter et al., LGPL-2.1-or-later). These three
+  files carry the licence LGPL-2.1-or-later (SPDX tag in their headers).
+
+src/formats/rad.ts
+  Port of the Reality AdLib Tracker v2.1 replayer, which its author Shayde / Reality released to the public domain
+  (as distributed in AdPlug, rad2.cpp).
+
+src/chips/Dx7.ts
+  Numerical tables and laws (32 algorithms, envelope rate / level laws, level and rate scaling, velocity table, pitch
+  envelope tables, coarse frequency table) taken from "music-synthesizer-for-android"
+  (https://github.com/google/music-synthesizer-for-android), Copyright 2012 Google Inc., Apache License 2.0
+  (http://www.apache.org/licenses/LICENSE-2.0). The engine around them is original.
+
+Test data
+  tests/fixtures/lha/*.lzh come from the Lhasa project (https://github.com/fragglet/lhasa, ISC licence).
+  The 6502 functional test of Klaus Dormann was downloaded to validate the CPU core and is not stored in the repository
+  (it is GPL licensed).
+
+Separate programs, not included
+  Hatari (GPL-2.0-or-later) through the separate package "hatari-ym".

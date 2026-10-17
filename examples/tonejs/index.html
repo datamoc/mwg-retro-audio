@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tone.js et mwg-retro-audio</title>
+<style>
+body{font:18px/1.6 system-ui,sans-serif;background:#e4eaf0;color:#172c42;max-width:780px;margin:60px auto;padding:24px}h1{font-size:2rem}button,input{font:inherit}button{padding:12px 24px;background:#254e78;color:white;border:0;border-radius:5px;margin-right:12px}button:disabled{opacity:.5}label{display:block;margin:24px 0}button:focus-visible,input:focus-visible{outline:3px solid #a43e74;outline-offset:4px}output{display:block;min-height:2em}
+</style>
+<h1>Une mélodie rétro, un synthé Tone.js</h1>
+<p>Une mélodie originale au YM2149 traverse un delay Tone.js. Un synthétiseur Tone.js joue une basse sur le même contexte audio.</p>
+<button id="play">Jouer ensemble</button><button id="stop" disabled>Arrêter</button>
+<label>Volume commun <input id="volume" type="range" min="-48" max="-6" step="1" value="-18"> <span id="level">−18 dB</span></label>
+<output id="status" role="status">Prêt. Le son démarre après un clic.</output>
+<p>Le tempo rétro reste fixé à 120 BPM ; les horloges originales ne sont pas étirées.</p>
+<script type="module" src="./app.js"></script>
+</html>

@@ -1,0 +1,6 @@
+{
+  "name": "tune4",
+  "samples": 7492325,
+  "sha256": "2a56f2cab2a81dc6bdfe3895dcc96de049962297dfdcbf63ef6720f768d66018",
+  "source": "Hatari 2.5.0 AVI audio (left channel = right channel)"
+}

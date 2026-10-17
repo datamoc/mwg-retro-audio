@@ -1,0 +1,95 @@
+{
+	"name": "@datamoc/mwg-retro-audio",
+	"version": "0.1.0",
+	"description": "Historical synthesizers and sound chips for mwg games, and a universal player for pre-MP3 electronic music: pure TypeScript (YM2149/AY, SID, NES APU, SN76489, YM2612, YM2151, OPL2/OPL3, DX7 and other historical synths) on the native Web Audio API, with players for YM, VGM/VGZ, NSF/NSFE, PSID, SPC, MIDI/XMI, MOD/XM/S3M/IT, DRO, IMF, CMF, HSC, RAD, ROL, D00, SCI, WAV and VOC files",
+	"type": "module",
+	"license": "MPL-2.0",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
+		},
+		"./chips": {
+			"types": "./dist/chips/index.d.ts",
+			"default": "./dist/chips/index.js"
+		},
+		"./formats": {
+			"types": "./dist/formats/index.d.ts",
+			"default": "./dist/formats/index.js"
+		},
+		"./driver": {
+			"types": "./dist/driver/index.d.ts",
+			"default": "./dist/driver/index.js"
+		},
+		"./sfx": {
+			"types": "./dist/sfx/index.d.ts",
+			"default": "./dist/sfx/index.js"
+		},
+		"./mwg": {
+			"types": "./dist/mwg/index.d.ts",
+			"default": "./dist/mwg/index.js"
+		},
+		"./instruments": {
+			"types": "./dist/instruments/index.d.ts",
+			"default": "./dist/instruments/index.js"
+		},
+		"./instruments/*": {
+			"types": "./dist/instruments/*.d.ts",
+			"default": "./dist/instruments/*.js"
+		},
+		"./chips/*": {
+			"types": "./dist/chips/*.d.ts",
+			"default": "./dist/chips/*.js"
+		},
+		"./driver/*": {
+			"types": "./dist/driver/*.d.ts",
+			"default": "./dist/driver/*.js"
+		},
+		"./formats/*": {
+			"types": "./dist/formats/*.d.ts",
+			"default": "./dist/formats/*.js"
+		},
+		"./package.json": "./package.json"
+	},
+	"files": [
+		"dist",
+		"src",
+		"docs",
+		"README.md",
+		"CONFORMANCE.md",
+		"NOTICE",
+		"LICENSE"
+	],
+	"sideEffects": false,
+	"engines": {
+		"node": ">=20.19.0"
+	},
+	"scripts": {
+		"check": "tsc --noEmit -p .",
+		"test": "node --import tsx --test \"tests/**/*.test.ts\"",
+		"build": "tsc -p tsconfig.build.json",
+		"check:bundles": "npm run build && node tools/bundle-check.mjs",
+		"check:piano": "node tools/piano-check.mjs",
+		"build:demo": "node tools/build-demo.mjs",
+		"format": "prettier --write src tests",
+		"format:check": "prettier --check src tests"
+	},
+	"peerDependencies": {
+		"@datamoc/mw_games": ">=0.42.0"
+	},
+	"peerDependenciesMeta": {
+		"@datamoc/mw_games": {
+			"optional": true
+		}
+	},
+	"devDependencies": {
+		"esbuild": "^0.28.2",
+		"@datamoc/mw_games": "file:../mwg",
+		"@types/node": "^26.6.5",
+		"prettier": "^3.9.10",
+		"tsx": "^4.23.15",
+		"typescript": "^7.0.2"
+	}
+}
