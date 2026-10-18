@@ -1,6 +1,6 @@
 {
 	"browser": "chrome headless 155.0.8059.85 (playwright-core 1.64.1)",
-	"date": "2026-10-17",
+	"date": "2026-10-18",
 	"models": 46,
 	"peaks": [
 		{
@@ -18,7 +18,7 @@
 		{
 			"id": "tandy",
 			"name": "Tandy SN76489 — Tandy 1000, IBM PCjr",
-			"peak": 0.1271,
+			"peak": 0.1611,
 			"controls": 7
 		},
 		{
@@ -84,7 +84,7 @@
 		{
 			"id": "nes-apu",
 			"name": "NES APU NTSC — Nintendo NES / Famicom (NTSC)",
-			"peak": 0.0946,
+			"peak": 0.0752,
 			"controls": 8
 		},
 		{
@@ -114,7 +114,7 @@
 		{
 			"id": "namco163",
 			"name": "Namco 163 — Famicom (cartouche Namco)",
-			"peak": 0.1,
+			"peak": 0.1002,
 			"controls": 8
 		},
 		{
@@ -210,13 +210,13 @@
 		{
 			"id": "la-synth",
 			"name": "Structure LA",
-			"peak": 0.0555,
+			"peak": 0.0565,
 			"controls": 5
 		},
 		{
 			"id": "ai-synth",
 			"name": "Structure AI",
-			"peak": 0.0544,
+			"peak": 0.0542,
 			"controls": 5
 		},
 		{
@@ -228,7 +228,7 @@
 		{
 			"id": "simple:Piano",
 			"name": "Piano",
-			"peak": 0.02,
+			"peak": 0.021,
 			"controls": 1
 		},
 		{
@@ -246,7 +246,7 @@
 		{
 			"id": "simple:Guitar",
 			"name": "Guitar",
-			"peak": 0.0099,
+			"peak": 0.0097,
 			"controls": 1
 		},
 		{

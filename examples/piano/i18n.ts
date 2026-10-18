@@ -32,7 +32,7 @@ const dictionary = {
 		layoutAuto: 'Automatique',
 		recTitle: 'Enregistrement MIDI',
 		recHelp:
-			'Un clavier MIDI est connecté : enregistrez ce que vous jouez, réécoutez-le sur le modèle choisi (changez de modèle pour comparer) puis téléchargez-le en fichier .mid.',
+			'Enregistrez ce que vous jouez (clavier MIDI, souris ou clavier d’ordinateur), réécoutez-le sur le modèle choisi (changez de modèle pour comparer) puis téléchargez-le en fichier .mid.',
 		recStart: '● Enregistrer',
 		recStop: '■ Terminer',
 		recPlay: '▶ Réécouter',
@@ -105,7 +105,7 @@ const dictionary = {
 		layoutAuto: 'Automatic',
 		recTitle: 'MIDI recording',
 		recHelp:
-			'A MIDI keyboard is connected: record what you play, listen to it again on the chosen model (switch model to compare), then download it as a .mid file.',
+			'Record what you play (MIDI keyboard, mouse or computer keyboard), listen to it again on the chosen model (switch model to compare), then download it as a .mid file.',
 		recStart: '● Record',
 		recStop: '■ Finish',
 		recPlay: '▶ Play back',
@@ -178,7 +178,7 @@ const dictionary = {
 		layoutAuto: 'Automatisch',
 		recTitle: 'MIDI-Aufnahme',
 		recHelp:
-			'Ein MIDI-Keyboard ist verbunden: Nehmen Sie auf, was Sie spielen, hören Sie es auf dem gewählten Modell erneut an (Modell wechseln zum Vergleichen) und laden Sie es als .mid-Datei herunter.',
+			'Nehmen Sie auf, was Sie spielen (MIDI-Keyboard, Maus oder Computertastatur), hören Sie es auf dem gewählten Modell erneut an (Modell wechseln zum Vergleichen) und laden Sie es als .mid-Datei herunter.',
 		recStart: '● Aufnehmen',
 		recStop: '■ Beenden',
 		recPlay: '▶ Anhören',

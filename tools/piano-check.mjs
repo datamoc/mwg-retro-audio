@@ -232,6 +232,32 @@ const restored = await page.evaluate(() => {
 if (!restored || restored.value !== restored.defaultValue)
 	record('reset', `settings not restored to defaults (${JSON.stringify(restored)})`);
 
+// enregistrement sans clavier MIDI : clavier d'ordinateur, changement de modèle pendant la prise, aucune note bloquée
+const typed = await newPage();
+await enableSound(typed);
+if (await typed.locator('#recorder').isHidden()) record('recorder', 'panel hidden without a MIDI input');
+await typed.click('#recStart');
+await typed.keyboard.down('KeyA');
+await typed.waitForTimeout(200);
+await typed.selectOption('#model', 'sid');
+await typed.waitForTimeout(100);
+await typed.keyboard.up('KeyA');
+await typed.keyboard.press('KeyS');
+await typed.waitForTimeout(100);
+await typed.click('#recStop');
+const typedStatus = await typed.evaluate(() => document.getElementById('recStatus').textContent);
+if (!/2 notes/.test(typedStatus)) record('recorder', `typed take: ${typedStatus}`);
+const [typedFile] = await Promise.all([typed.waitForEvent('download'), typed.click('#recDownload')]);
+const typedBytes = await readFile(await typedFile.path());
+const count = (status, note) => typedBytes.filter((byte, i) => byte === status && typedBytes[i + 1] === note).length;
+if (count(0x90, 60) !== 1 || count(0x80, 60) < 1) record('recorder', 'note cut by the model change left hanging in the take');
+await typed.selectOption('#model', 'ym2149');
+await typed.click('#recPlay');
+await typed.waitForTimeout(200);
+if (!(await typed.evaluate(() => document.getElementById('clock').textContent)).includes('Yamaha YM2149'))
+	record('recorder', 'the take did not replay on the model chosen afterwards');
+await typed.close();
+
 // point 4 : MIDI simulé — note-on/off, vélocité, sustain, all-notes-off, déconnexion
 const midiPage = await newPage();
 await enableSound(midiPage);

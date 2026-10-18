@@ -117,3 +117,62 @@ projet. Le piano réutilise la couche d'instruments et de contrôles existante ;
 catalogue complet de tous les modèles vit dans `src/instruments/catalogue.ts` et
 reste un import explicite, vérifié par `npm run check:bundles` pour ne rien
 imposer aux applications consommatrices qui importent un profil ou une puce seule.
+
+### 5. Studio d'enregistrement dans l'exemple de piano
+
+Déjà en place (17 octobre 2026) : le panneau « Enregistrement MIDI » — démarrer /
+terminer (notes et pédale de sustain capturées), réécouter la prise sur le modèle
+choisi — et le téléchargement du `.mid` écrit par `writeSmf` (`src/formats/midiWrite.ts`,
+format 0, validé aller-retour avec `parseSmf`) ; huit morceaux livrés avec la démo et
+le fichier `.mid` de l'utilisateur se jouent déjà (sélecteur de fichier unique).
+Validé par `tools/piano-check.mjs` avec le MIDI simulé.
+
+- [x] Enregistrer sans clavier MIDI : le panneau n'apparaît aujourd'hui qu'avec une
+  entrée MIDI choisie ; permettre de lancer une prise depuis la souris et le clavier
+  d'ordinateur, et garder la prise à travers les changements de modèle (elle se
+  rejoue sur celui qu'on choisit).
+  Livré : le panneau est toujours visible ; une prise faite à la souris ou au clavier
+  d'ordinateur survit au changement de modèle, et les notes coupées par ce changement
+  sont relâchées dans la prise (elles restaient suspendues auparavant). Vérifié par
+  `tools/piano-check.mjs`.
+- [ ] Rejouer la prise vers une sortie standard et l'enregistrer en fichier : en plus
+  du modèle choisi, proposer une voix de rechange « standard » (un profil simple)
+  pour comparer la prise à une synthèse générique ; rendre la prise hors ligne
+  (`renderPlayer` sur `MidiPlayer` + `InstrumentMidiSink`) puis l'exporter en FLAC ou
+  Opus par `exportAudio` — Opus exige WebCodecs, griser le bouton d'après
+  `isOpusEncodingAvailable()`.
+- [ ] Choisir un répertoire de son ordinateur (ou un disque monté, ou une autre
+  source) et y lire les MIDI : sélecteur de dossier (`showDirectoryPicker`, Chrome et
+  Edge ; repli sur le sélecteur de fichier actuel ailleurs), parcours des `.mid` et
+  `.xmi` du dossier, titre repris de l'en-tête du fichier, liste intégrée au
+  sélecteur de morceaux, refus ou absence de l'API sans bloquer le reste de l'exemple.
+
+### 6. Moteurs MIDI pour tous les modèles, banques SoundFont, microKORG
+
+- [ ] Exposer chaque modèle du catalogue comme moteur MIDI nommé : `retro:<id>`
+  fondé sur `InstrumentMidiSink` (fusion des canaux, percussions omises, voix
+  élaguées selon la polyphonie — mélodie et basse gardées), enregistré aux côtés de
+  `retro:mt32` / `retro:dx7` / `retro:d50` dans `registerRetroMidiEngines` ;
+  validation par les tests d'interopérabilité mwg — `renderMidiThroughSynth` d'un
+  fichier réel à travers plusieurs moteurs, signal `onMidiSynthFallback`, rendu non
+  nul pour chaque moteur — et liste documentée avec `docs/MWG-REQUIREMENTS.md`.
+- [ ] Banques de sons SoundFont : choisir un répertoire de son disque où l'utilisateur
+  pose ses `.sf2` et `.sf3`, les lister et y jouer les préréglages — décodage RIFF
+  (`sdtp`/`pdta` : échantillons PCM 16 bits, zones, modulateurs essentiels ; le SF3
+  remplace les échantillons par de l'Ogg Vorbis et demandera donc un décodeur Vorbis
+  que le paquet n'a pas encore, à livrer d'abord pour le SF2), préréglages exposés
+  comme modèles jouables (`soundfont:<banque>:<préréglage>` dans le piano, panneau
+  adapté, moteur MIDI du point précédent). Aucune banque livrée avec le paquet :
+  l'utilisateur ouvre ses propres fichiers, selon la règle « aucune ROM, aucun
+  échantillon issu d'une ROM » de `CONFORMANCE.md`.
+- [ ] Ajouter le Korg microKORG (1999) comme synthétiseur modélisé : deux oscillateurs
+  analogiques modélisés et sous-oscillateur, sync et ring modulant, filtre multimode
+  à résonance, enveloppes de filtre et d'ampli, LFO, programmes évocateurs des
+  banques du microKORG — sans ROM ni échantillon ; le vocodeur et l'accordeur restent
+  hors du jeu de notes. Adaptateur d'instrument, entrée explicite dans le catalogue
+  (47 modèles), presets exposés, régressions de cycle de vie comme les autres
+  synthétiseurs et mesures de bundles mises à jour.
+
+Les points 5 et 6 restent réalisables dans ce projet, sans modification d'un autre ;
+SoundFonts et microKORG ajoutent leurs modules propres et ne doivent rien imposer aux
+imports ciblés (à vérifier par `npm run check:bundles` comme pour les autres modèles).

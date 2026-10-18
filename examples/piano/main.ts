@@ -108,6 +108,8 @@ function release(source: string): void {
 	paintNotes();
 }
 function panic(): void {
+	// a take must not keep notes that the panic (or a model change) cut: release them in the take too
+	for (const note of new Set(held.values())) recordMessage(0x80, note, 0);
 	held.clear();
 	instrument?.allNotesOff();
 	paintNotes();
@@ -464,7 +466,6 @@ window.addEventListener(
 );
 window.addEventListener('keyup', (event) => release(event.code), options);
 window.addEventListener('blur', panic, options);
-const recorder = element('recorder');
 const recButtons = {
 	start: element<HTMLButtonElement>('recStart'),
 	stop: element<HTMLButtonElement>('recStop'),
@@ -480,9 +481,7 @@ function recordMessage(status: number, data1: number, data2: number): void {
 	recording.events.push({ time: (performance.now() - recording.startedAt) / 1000, status, data1, data2 });
 	if (status === 0x90) paintRecorder();
 }
-/** the panel shows while a MIDI keyboard is selected, and as long as there is something to replay or save */
 function paintRecorder(): void {
-	recorder.hidden = !midiSelect.value && !recording && take.length === 0;
 	recButtons.start.disabled = !!recording;
 	recButtons.stop.disabled = !recording;
 	for (const button of [recButtons.play, recButtons.download, recButtons.clear])
