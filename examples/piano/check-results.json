@@ -18,13 +18,13 @@
 		{
 			"id": "tandy",
 			"name": "Tandy SN76489 — Tandy 1000, IBM PCjr",
-			"peak": 0.1611,
+			"peak": 0.1271,
 			"controls": 7
 		},
 		{
 			"id": "sid",
 			"name": "MOS 6581 SID — Commodore 64",
-			"peak": 0.2242,
+			"peak": 0.2457,
 			"controls": 9
 		},
 		{
@@ -84,7 +84,7 @@
 		{
 			"id": "nes-apu",
 			"name": "NES APU NTSC — Nintendo NES / Famicom (NTSC)",
-			"peak": 0.0946,
+			"peak": 0.0736,
 			"controls": 8
 		},
 		{
@@ -102,7 +102,7 @@
 		{
 			"id": "mmc5",
 			"name": "Nintendo MMC5 — NES / Famicom (cartouche MMC5)",
-			"peak": 0.0492,
+			"peak": 0.0736,
 			"controls": 8
 		},
 		{
@@ -114,7 +114,7 @@
 		{
 			"id": "namco163",
 			"name": "Namco 163 — Famicom (cartouche Namco)",
-			"peak": 0.1002,
+			"peak": 0.1,
 			"controls": 8
 		},
 		{
@@ -132,7 +132,7 @@
 		{
 			"id": "lapc-i",
 			"name": "Roland LAPC-I — PC (LAPC-I, MPU-401)",
-			"peak": 0.0503,
+			"peak": 0.0564,
 			"controls": 1
 		},
 		{
@@ -144,7 +144,7 @@
 		{
 			"id": "opl3",
 			"name": "OPL3 — PC (Sound Blaster Pro 2 / 16)",
-			"peak": 0.1191,
+			"peak": 0.1165,
 			"controls": 6
 		},
 		{
@@ -174,7 +174,7 @@
 		{
 			"id": "m1",
 			"name": "Korg M1",
-			"peak": 0.0775,
+			"peak": 0.0854,
 			"controls": 8
 		},
 		{
@@ -204,7 +204,7 @@
 		{
 			"id": "additive",
 			"name": "Bell Labs Digital Synthesizer",
-			"peak": 0.1803,
+			"peak": 0.1789,
 			"controls": 5
 		},
 		{
@@ -216,7 +216,7 @@
 		{
 			"id": "synclavier",
 			"name": "Synclavier",
-			"peak": 0.0934,
+			"peak": 0.091,
 			"controls": 6
 		},
 		{
@@ -240,13 +240,13 @@
 		{
 			"id": "simple:Piano",
 			"name": "Piano",
-			"peak": 0.0213,
+			"peak": 0.0212,
 			"controls": 1
 		},
 		{
 			"id": "simple:Electric piano",
 			"name": "Electric piano",
-			"peak": 0.0106,
+			"peak": 0.0105,
 			"controls": 1
 		},
 		{
@@ -258,7 +258,7 @@
 		{
 			"id": "simple:Guitar",
 			"name": "Guitar",
-			"peak": 0.0099,
+			"peak": 0.0098,
 			"controls": 1
 		},
 		{
