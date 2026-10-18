@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# read-only token: nothing here writes to the repository
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '26'
+      # the development dependency on @datamoc/mwg is `file:../mwg` (a sibling checkout) on a developer machine;
+      # a runner has no sibling, so it takes the published version the peer range asks for
+      - run: npm pkg set devDependencies.@datamoc/mwg='>=0.47.0'
+      - run: npm install --no-package-lock
+      - run: npm run check
+      - run: npm run format:check
+      - run: npm test
+      # builds, then asserts the size and tree-shaking of the targeted imports and the packaged worker cores
+      - run: npm run check:bundles

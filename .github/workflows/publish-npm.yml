@@ -1,0 +1,37 @@
+name: Publish to npm
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # trusted publishing: npm exchanges this workflow's OIDC identity for a short-lived publish token once the
+      # package settings on npmjs.com list datamoc/mwg-retro-audio and this file as a trusted publisher
+      # (the first version of a package is published by hand: the package must exist before it can be configured)
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # v7, not v6: v6 exports a dummy NODE_AUTH_TOKEN that npm tries before the OIDC exchange (E401)
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '26'
+          package-manager-cache: false
+          registry-url: 'https://registry.npmjs.org'
+      - run: npm pkg set devDependencies.@datamoc/mwg='>=0.47.0'
+      - run: npm install --no-package-lock
+      # trusted publishing needs npm 11.5.1 or later
+      - run: npm install -g npm@^11.5.1
+      # a tag alone proves nothing about the code at that tag
+      - run: npm run check
+      - run: npm test
+      - run: npm run check:bundles
+      # staged, not direct (as for mwg): the version stays pending until `npm stage approve`, which needs 2FA by hand
+      # (`npm stage list` shows what is pending); an OIDC token can stage but never make a version public
+      - run: |
+          if [[ "${{ github.ref_name }}" == *-* ]]; then TAG="--tag alpha"; else TAG=""; fi
+          npm stage publish --access public $TAG
