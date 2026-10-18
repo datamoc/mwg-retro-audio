@@ -18,6 +18,9 @@ h2{font-size:1.2rem;margin:28px 0 8px}.chips{display:flex;gap:8px;flex-wrap:wrap
 <div id="machines" class="chips" role="group" data-i18n-aria="byMachine"></div>
 <p id="description"></p><p id="info" class="meta"></p><p id="where" class="meta"></p>
 <div id="presets" class="chips" role="group" data-i18n-aria="presetsAria"></div>
+<section class="panel" aria-labelledby="sf-title"><h2 id="sf-title" data-i18n="sfTitle"></h2>
+<p class="meta" data-i18n="sfHelp"></p>
+<div class="toolbar"><button id="sfFolder" data-i18n="sfFolder"></button><label><span data-i18n="sfFile"></span> <input id="sfFile" type="file" multiple accept=".sf2,.sf3"></label><label><span data-i18n="sfBank"></span> <select id="sfBank"></select></label></div></section>
 <section class="panel" aria-labelledby="auto-title"><h2 id="auto-title" data-i18n="autoTitle"></h2>
 <p class="meta" data-i18n="autoHelp"></p>
 <div class="toolbar"><label><span data-i18n="song"></span> <select id="song"></select></label><button id="play"></button><button id="stop" disabled data-i18n="stop"></button><label><input id="chain" type="checkbox" checked> <span data-i18n="chain"></span></label><label><span data-i18n="file"></span> <input id="file" type="file" multiple accept=".mid,.midi,.xmi,audio/midi"></label><button id="folder" data-i18n="folder"></button></div>

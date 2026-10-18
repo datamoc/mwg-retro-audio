@@ -106,6 +106,16 @@ physique n'a encore été essayé.
   fichier .mid » accepte plusieurs fichiers. Essayé seulement avec une fausse API de
   sélecteur de dossier.
 
+## Banques SoundFont
+
+La section « Banques SoundFont » ouvre vos propres fichiers `.sf2` (bouton « Dossier de
+banques… » sous Chrome et Edge, sinon « Votre fichier .sf2 ») ; chaque préréglage de la
+banque devient un modèle jouable, au bas de la liste, avec un panneau (gain, panoramique,
+temps d'attaque et de relâchement, filtre, boucles). Aucune banque n'est livrée avec la page.
+Le SF3 (Ogg Vorbis) est refusé avec un message ; sous-ensemble de la norme lu et joué : voir
+`CONFORMANCE.md`. Validé avec des banques fabriquées par `tests/sf2file.ts`, jamais avec une
+banque réelle.
+
 ## Page autonome
 
 `npm run build:demo` génère `examples/piano/synth-demo.html` : un seul fichier

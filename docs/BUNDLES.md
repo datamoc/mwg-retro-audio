@@ -31,9 +31,11 @@ Mesure du 17 octobre 2026, code minifié (octets ; gzip à titre comparatif) :
 | YM2149 seul | 3 170 | 1 343 |
 | YM2149 depuis `/chips` | 3 170 | 1 344 |
 | YM2149 depuis l'entrée principale | 3 170 | 1 344 |
-| Catalogue complet des instruments (`/instruments/catalogue`) | 159 007 | 50 769 |
+| Catalogue complet des instruments (`/instruments/catalogue`) | 160 009 | 50 972 |
 | Moteurs MIDI nommés, un choix de modèles (`/mwg` + `/instruments/psg`) | 16 163 | 5 848 |
-| Moteurs MIDI nommés, les 47 modèles (`/mwg/catalogue`) | 179 222 | 58 380 |
+| Moteurs MIDI nommés, les 47 modèles (`/mwg/catalogue`) | 180 224 | 58 586 |
+| Lecteur de banques SoundFont seul (`/formats/soundfont`) | 7 044 | 2 872 |
+| Instruments SoundFont (`/instruments/soundfont`, lecteur et synthèse compris) | 7 986 | 3 171 |
 | Exports des puces et instruments disponibles | 118 603 | 37 751 |
 
 Le contrôle refuse un bundle de profil simple contenant les émulateurs,

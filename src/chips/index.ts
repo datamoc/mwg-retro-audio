@@ -133,3 +133,4 @@ export function createChip(id: string, options: ChipOptions & Record<string, unk
 export function chipIds(): string[] {
 	return [...new Set([...Object.keys(builtins), ...factories.keys()])];
 }
+export { SoundFontSynth } from './SoundFont.ts';

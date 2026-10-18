@@ -177,7 +177,7 @@ Validé par `tools/piano-check.mjs` avec le MIDI simulé.
   moteurs dédiés avec SysEx). Le catalogue n'entre pas dans `/mwg` : `check:bundles`
   le vérifie (`mwgTargeted` 16 Ko, `mwgCatalogue` 169 Ko ; profil et puce seuls
   inchangés). Tests : `tests/mwg-engines.test.ts`.
-- [ ] Banques de sons SoundFont : choisir un répertoire de son disque où l'utilisateur
+- [x] Banques de sons SoundFont : choisir un répertoire de son disque où l'utilisateur
   pose ses `.sf2` et `.sf3`, les lister et y jouer les préréglages — décodage RIFF
   (`sdtp`/`pdta` : échantillons PCM 16 bits, zones, modulateurs essentiels ; le SF3
   remplace les échantillons par de l'Ogg Vorbis et demandera donc un décodeur Vorbis
@@ -186,6 +186,15 @@ Validé par `tools/piano-check.mjs` avec le MIDI simulé.
   adapté, moteur MIDI du point précédent). Aucune banque livrée avec le paquet :
   l'utilisateur ouvre ses propres fichiers, selon la règle « aucune ROM, aucun
   échantillon issu d'une ROM » de `CONFORMANCE.md`.
+  Livré pour le SF2 : `src/formats/soundfont.ts` (lecteur borné), `src/chips/SoundFont.ts`
+  (synthèse), `src/instruments/soundfont.ts` (un instrument `soundfont:<banque>:<n>` par
+  préréglage, hors catalogue statique ; moteurs MIDI par `instrumentMidiEngines`), et dans
+  la démo une section « Banques SoundFont » : dossier de banques (`showDirectoryPicker`) ou
+  fichiers `.sf2`, les préréglages rejoignent la liste des modèles. Le **SF3 est refusé**
+  avec un message clair : le décodeur Vorbis reste à livrer. Sous-ensemble de la norme
+  dans `CONFORMANCE.md`. Tests : banques synthétiques (`tests/soundfont.test.ts`), mesures
+  de bundles (`soundFontParser` 7 Ko, `soundFontInstruments` 8 Ko ; le reste inchangé),
+  `piano-check` avec un sélecteur de dossier **simulé** ; aucune banque réelle essayée.
 - [x] Ajouter le Korg microKORG (1999) comme synthétiseur modélisé : deux oscillateurs
   analogiques modélisés et sous-oscillateur, sync et ring modulant, filtre multimode
   à résonance, enveloppes de filtre et d'ampli, LFO, programmes évocateurs des

@@ -13,6 +13,8 @@ const entries = {
 	catalogue: `import { instrumentCatalogue } from '@datamoc/mwg-retro-audio/instruments/catalogue'; console.log(instrumentCatalogue);`,
 	mwgTargeted: `import { instrumentMidiEngines } from '@datamoc/mwg-retro-audio/mwg'; import { psgInstruments } from '@datamoc/mwg-retro-audio/instruments/psg'; console.log(instrumentMidiEngines(psgInstruments));`,
 	mwgCatalogue: `import { retroCatalogueMidiEngines } from '@datamoc/mwg-retro-audio/mwg/catalogue'; console.log(retroCatalogueMidiEngines);`,
+	soundFontParser: `import { parseSf2 } from '@datamoc/mwg-retro-audio/formats/soundfont'; console.log(parseSf2);`,
+	soundFontInstruments: `import { soundFontInstruments } from '@datamoc/mwg-retro-audio/instruments/soundfont'; console.log(soundFontInstruments);`,
 	business: `import * as chips from '@datamoc/mwg-retro-audio/chips'; import * as instruments from '@datamoc/mwg-retro-audio/instruments'; console.log(chips, instruments);`,
 };
 const results = {};
@@ -53,6 +55,19 @@ for (const [name, contents] of Object.entries(entries)) {
 		}
 		assert(!modules.some((path) => path.includes('/instruments/')), 'A single chip retained instrument layers');
 	}
+	if (name === 'soundFontParser') {
+		assert(
+			!modules.some((path) => /\/(chips|instruments|players)\//.test(path)),
+			'The SoundFont reader retained chips, instruments or players',
+		);
+	}
+	if (name === 'soundFontInstruments') {
+		assert(
+			!modules.some((path) => /instruments\/(catalogue|synths|modelled|registers|psg)\.js|historical|M1|MicroKorg|Dx7/.test(path)),
+			'The SoundFont instruments retained the catalogue or other synthesizers',
+		);
+		assert(modules.some((path) => path.endsWith('chips/SoundFont.js')), 'The SoundFont player is missing');
+	}
 	if (name === 'mwgTargeted') {
 		assert(
 			!modules.some((path) => /instruments\/(catalogue|synths|modelled|registers|fm-registers|pc-registers)\.js|catalogueEngines/.test(path)),
@@ -84,6 +99,7 @@ for (const [name, contents] of Object.entries(entries)) {
 assert(results.profile.bytes < results.catalogue.bytes);
 assert(results.chip.bytes < results.catalogue.bytes);
 assert(results.profile.bytes < results.business.bytes);
+assert(results.soundFontParser.bytes < results.soundFontInstruments.bytes);
 assert(results.mwgTargeted.bytes < results.mwgCatalogue.bytes);
 await writeFile(
 	resolve(root, 'docs/bundle-results.json'),

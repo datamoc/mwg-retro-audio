@@ -5,6 +5,9 @@ import { InstrumentMidiSink } from '../../src/instruments/InstrumentMidiSink.ts'
 import { isXmi, MidiPlayer, parseSmf, trimLeadingSilence, xmiToSmf } from '../../src/formats/midi.ts';
 import type { MidiEvent, MidiSong } from '../../src/formats/midi.ts';
 import { writeSmf } from '../../src/formats/midiWrite.ts';
+import { parseSf2 } from '../../src/formats/soundfont.ts';
+import { soundFontBankId, soundFontInstruments } from '../../src/instruments/soundfont.ts';
+import type { InstrumentDef } from '../../src/instruments/Instrument.ts';
 import { renderPlayer } from '../../src/driver/Renderer.ts';
 import { AUDIO_FORMATS, exportAudioBlob } from '../../src/driver/export.ts';
 import type { AudioFormat } from '../../src/driver/export.ts';
@@ -22,6 +25,11 @@ const octave = element<HTMLInputElement>('octave');
 const status = element<HTMLOutputElement>('status');
 const keyboard = element<HTMLDivElement>('keyboard');
 const held = new Map<string, number>();
+/** the SoundFont banks the user opened: their presets are models too, added to the list of the page */
+const loadedBanks: { id: string; name: string; definitions: InstrumentDef[] }[] = [];
+const definitionOf = (id: string): InstrumentDef | undefined =>
+	instrumentCatalogue.find((definition) => definition.info.id === id) ??
+	loadedBanks.flatMap((bank) => bank.definitions).find((definition) => definition.info.id === id);
 /** the take being recorded (times in seconds from the start of the recording) and the last finished one */
 let recording: { startedAt: number; events: MidiEvent[] } | undefined;
 let take: MidiEvent[] = [];
@@ -267,9 +275,7 @@ function describe(): void {
 }
 function choose(): void {
 	panic();
-	instrument = instrumentCatalogue
-		.find((definition) => definition.info.id === model.value)!
-		.create({ sampleRate: context?.sampleRate ?? 44100 });
+	instrument = definitionOf(model.value)!.create({ sampleRate: context?.sampleRate ?? 44100 });
 	instrument.onChange = controls;
 	element('description').textContent = instrument.info.description;
 	describe();
@@ -294,7 +300,13 @@ function buildModelList(): void {
 		}
 		if (section.children.length) model.append(section);
 	}
-	model.value = selected;
+	for (const bank of loadedBanks) {
+		const section = document.createElement('optgroup');
+		section.label = t('sfGroup', { name: bank.name });
+		for (const definition of bank.definitions) section.append(new Option(definition.info.name, definition.info.id));
+		model.append(section);
+	}
+	model.value = definitionOf(selected) ? selected : 'ym2149';
 }
 buildModelList();
 model.value = 'ym2149';
@@ -371,11 +383,7 @@ buildSongList();
 /** the instrument a song plays on: the chosen model, or the plain piano for a take set to the standard voice */
 function voiceFor(key: string): Instrument {
 	if (key === 'take' && element<HTMLSelectElement>('recVoice').value === 'standard')
-		return instrumentCatalogue
-			.find((definition) => definition.info.id === 'simple:Piano')!
-			.create({
-				sampleRate: context?.sampleRate ?? 44100,
-			});
+		return definitionOf('simple:Piano')!.create({ sampleRate: context?.sampleRate ?? 44100 });
 	return instrument;
 }
 function paintSong(): void {
@@ -569,6 +577,95 @@ window.addEventListener(
 );
 window.addEventListener('keyup', (event) => release(event.code), options);
 window.addEventListener('blur', panic, options);
+// SoundFont banks: the user opens .sf2 files, the presets join the list of models
+const SF_MAX_BYTES = 512 * 1024 * 1024;
+const sfBank = element<HTMLSelectElement>('sfBank');
+interface BankSource {
+	name: string;
+	file: () => Promise<File>;
+}
+let bankSources: BankSource[] = [];
+function buildBankList(): void {
+	sfBank.replaceChildren(new Option(bankSources.length ? '—' : t('sfNone'), ''));
+	bankSources.forEach((source, index) => sfBank.add(new Option(source.name, String(index))));
+	sfBank.disabled = bankSources.length === 0;
+}
+async function openBank(source: BankSource): Promise<void> {
+	say('sfLoading', { name: source.name });
+	try {
+		const file = await source.file();
+		if (file.size > SF_MAX_BYTES) return say('sfTooBig', { name: source.name, limit: formatSize(SF_MAX_BYTES) });
+		const font = parseSf2(new Uint8Array(await file.arrayBuffer()));
+		const id = soundFontBankId(source.name);
+		const bank = { id, name: font.name || source.name, definitions: soundFontInstruments(font, id) };
+		if (!bank.definitions.length) return say('sfBad', { error: 'no preset' });
+		const known = loadedBanks.findIndex((entry) => entry.id === id);
+		if (known >= 0) loadedBanks.splice(known, 1);
+		loadedBanks.push(bank);
+		buildModelList();
+		model.value = bank.definitions[0].info.id;
+		choose();
+		say('sfLoaded', { count: bank.definitions.length, name: bank.name });
+	} catch (error) {
+		say('sfBad', { error: (error as Error).message });
+	}
+}
+sfBank.addEventListener(
+	'change',
+	() => {
+		const source = bankSources[Number(sfBank.value)];
+		if (sfBank.value !== '' && source) void openBank(source);
+	},
+	options,
+);
+element<HTMLInputElement>('sfFile').addEventListener(
+	'change',
+	(event) => {
+		const input = event.target as HTMLInputElement;
+		const files = [...(input.files ?? [])];
+		input.value = '';
+		bankSources = files.map((file) => ({ name: file.name, file: async () => file }));
+		buildBankList();
+		if (bankSources.length === 1) void openBank(bankSources[0]);
+		else if (bankSources.length) say('sfFound', { count: bankSources.length, name: '…' });
+	},
+	options,
+);
+const sfFolderButton = element<HTMLButtonElement>('sfFolder');
+sfFolderButton.disabled = !directoryPicker;
+if (!directoryPicker) sfFolderButton.title = t('folderUnavailable');
+sfFolderButton.addEventListener(
+	'click',
+	async () => {
+		if (!directoryPicker) return;
+		try {
+			const folder = await directoryPicker.call(window, { mode: 'read' });
+			const found: BankSource[] = [];
+			const walk = async (directory: DirectoryHandle, depth: number): Promise<void> => {
+				const names: { handle: { kind: string; name: string }; name: string }[] = [];
+				for await (const [name, handle] of directory.entries()) names.push({ handle, name });
+				names.sort((a, b) => a.name.localeCompare(b.name));
+				for (const { handle, name } of names) {
+					if (found.length >= MAX_FOLDER_FILES) return;
+					if (handle.kind === 'directory' && depth < MAX_FOLDER_DEPTH)
+						await walk(handle as unknown as DirectoryHandle, depth + 1);
+					else if (handle.kind === 'file' && /\.(sf2|sf3)$/i.test(name))
+						found.push({ name, file: () => (handle as unknown as { getFile(): Promise<File> }).getFile() });
+				}
+			};
+			await walk(folder, 0);
+			bankSources = found;
+			buildBankList();
+			if (!found.length) say('sfNoneInFolder', { name: folder.name });
+			else say('sfFound', { count: found.length, name: folder.name });
+		} catch (error) {
+			if ((error as Error).name !== 'AbortError') say('folderFail', { error: String(error) });
+		}
+	},
+	options,
+);
+buildBankList();
+
 const recButtons = {
 	start: element<HTMLButtonElement>('recStart'),
 	stop: element<HTMLButtonElement>('recStop'),
@@ -591,7 +688,7 @@ const formatSize = (bytes: number): string =>
 /** a copy of the live instrument for an offline render: same model, same settings, and no disturbing the live notes */
 function offlineVoice(rate: number): Instrument {
 	const key = element<HTMLSelectElement>('recVoice').value === 'standard' ? 'simple:Piano' : instrument.info.id;
-	const copy = instrumentCatalogue.find((definition) => definition.info.id === key)!.create({ sampleRate: rate });
+	const copy = definitionOf(key)!.create({ sampleRate: rate });
 	if (key === instrument.info.id)
 		for (const { id, get } of instrument.controls.map((control) => ({ id: control.id, get: () => control.get() })))
 			(
@@ -813,6 +910,7 @@ function applyLanguage(code: Lang): void {
 	refreshMidiLabel();
 	paintKeysHelp();
 	paintRecorder();
+	buildBankList();
 	status.value = t(said.key, said.values);
 }
 function refreshMidiLabel(): void {

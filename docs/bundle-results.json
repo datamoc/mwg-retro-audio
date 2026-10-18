@@ -36,8 +36,8 @@
       ]
     },
     "catalogue": {
-      "bytes": 159007,
-      "gzipBytes": 50769,
+      "bytes": 160009,
+      "gzipBytes": 50972,
       "modules": [
         "dist/chips/Ym2149.js",
         "dist/instruments/controls.js",
@@ -97,8 +97,8 @@
       ]
     },
     "mwgCatalogue": {
-      "bytes": 179222,
-      "gzipBytes": 58380,
+      "bytes": 180224,
+      "gzipBytes": 58586,
       "modules": [
         "dist/chips/Ym2149.js",
         "dist/instruments/controls.js",
@@ -148,9 +148,29 @@
         "mwgCatalogue.ts"
       ]
     },
+    "soundFontParser": {
+      "bytes": 7044,
+      "gzipBytes": 2872,
+      "modules": [
+        "dist/formats/soundfont.js",
+        "soundFontParser.ts"
+      ]
+    },
+    "soundFontInstruments": {
+      "bytes": 7986,
+      "gzipBytes": 3171,
+      "modules": [
+        "dist/chips/SoundFont.js",
+        "dist/instruments/BaseInstrument.js",
+        "dist/instruments/controls.js",
+        "dist/instruments/SynthInstrument.js",
+        "dist/instruments/soundfont.js",
+        "soundFontInstruments.ts"
+      ]
+    },
     "business": {
-      "bytes": 127928,
-      "gzipBytes": 40476,
+      "bytes": 132512,
+      "gzipBytes": 41837,
       "modules": [
         "dist/chips/index.js",
         "dist/chips/BoxRenderer.js",
@@ -177,6 +197,7 @@
         "dist/chips/Sn76489.js",
         "dist/chips/Ym2151.js",
         "dist/chips/Mt32Synth.js",
+        "dist/chips/SoundFont.js",
         "dist/instruments/index.js",
         "dist/instruments/registry.js",
         "dist/instruments/BaseInstrument.js",

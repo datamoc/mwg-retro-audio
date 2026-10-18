@@ -366,6 +366,75 @@ const leadClock = await lead.evaluate(() => document.getElementById('clock').tex
 if (!/ \/ 4:26 /.test(leadClock)) record('lead-silence', `clock: ${leadClock}`);
 await lead.close();
 
+// banques SoundFont : fichier .sf2 ouvert, SF3 refusé, dossier de banques simulé ; aucune banque n'est livrée,
+// les fichiers sont fabriqués par tests/sf2file.ts
+const sf2Module = await build({
+	entryPoints: [resolve(root, 'tests/sf2file.ts')],
+	bundle: true,
+	format: 'esm',
+	write: false,
+	logLevel: 'warning',
+});
+const sf2Tools = await import(`data:text/javascript;base64,${Buffer.from(sf2Module.outputFiles[0].text).toString('base64')}`);
+const sampleBank = (name, version) =>
+	sf2Tools.buildSf2({
+		name,
+		version,
+		samples: [{ name: 'Sine', data: sf2Tools.sine(100, 8), rate: 44100, rootKey: 69, loopStart: 200, loopEnd: 600 }],
+		instruments: [{ name: 'I', zones: [{ gens: [[sf2Tools.GEN.sampleModes, 1]], target: 0 }] }],
+		presets: [
+			{ name: 'Sine pad', zones: [{ target: 0 }] },
+			{ name: 'Sine high', zones: [{ gens: [[sf2Tools.GEN.coarseTune, 12]], target: 0 }] },
+		],
+	});
+const bankPage = await newPage();
+await enableSound(bankPage);
+await bankPage.setInputFiles('#sfFile', {
+	name: 'test-bank.sf2',
+	mimeType: 'application/octet-stream',
+	buffer: Buffer.from(sampleBank('Test bank', [2, 4])),
+});
+await bankPage.waitForFunction(() => document.getElementById('model').value.startsWith('soundfont:'));
+const bankState = await bankPage.evaluate(() => ({
+	group: Array.from(document.querySelectorAll('#model optgroup')).map((g) => g.label).at(-1),
+	options: document.querySelectorAll('#model optgroup:last-child option').length,
+	status: document.getElementById('status').value,
+	controls: document.querySelectorAll('#controls .control').length,
+}));
+if (bankState.group !== 'SoundFont : Test bank' || bankState.options !== 2 || !/2 préréglages/.test(bankState.status) || bankState.controls < 6)
+	record('soundfont', JSON.stringify(bankState));
+const bankKeys = keyboard(bankPage);
+if ((await levelWhileHeld(bankPage, bankKeys.press, bankKeys.release, 600)) < 0.001) record('soundfont', 'a preset of the bank made no sound');
+await bankPage.setInputFiles('#sfFile', {
+	name: 'compressed.sf3',
+	mimeType: 'application/octet-stream',
+	buffer: Buffer.from(sampleBank('Compressed', [3, 0])),
+});
+await bankPage.waitForFunction(() => /SF3|Vorbis/.test(document.getElementById('status').value));
+if ((await levelWhileHeld(bankPage, bankKeys.press, bankKeys.release, 400)) < 0.001) record('soundfont', 'the keyboard stopped after a refused SF3');
+await bankPage.close();
+const bankFolder = await newPage('ok', {
+	script: (bytes) => {
+		const file = (name, data) => ({ kind: 'file', name, getFile: async () => new File([new Uint8Array(data)], name) });
+		window.showDirectoryPicker = async () => ({
+			kind: 'directory',
+			name: 'Banques',
+			entries: async function* () {
+				for (const entry of [file('b-bank.sf2', bytes), file('notes.txt', [65]), file('a-bank.sf2', bytes)]) yield [entry.name, entry];
+			},
+		});
+	},
+	arg: [...sampleBank('Folder bank', [2, 4])],
+});
+await enableSound(bankFolder);
+await bankFolder.click('#sfFolder');
+await bankFolder.waitForFunction(() => document.querySelectorAll('#sfBank option').length === 3);
+const listedBanks = await bankFolder.evaluate(() => Array.from(document.querySelectorAll('#sfBank option')).map((o) => o.textContent));
+if (listedBanks.slice(1).join('|') !== 'a-bank.sf2|b-bank.sf2') record('soundfont-folder', `banks: ${listedBanks}`);
+await bankFolder.selectOption('#sfBank', '0');
+await bankFolder.waitForFunction(() => document.getElementById('model').value.startsWith('soundfont:'));
+await bankFolder.close();
+
 // point 4 : MIDI simulé — note-on/off, vélocité, sustain, all-notes-off, déconnexion
 const midiPage = await newPage();
 await enableSound(midiPage);

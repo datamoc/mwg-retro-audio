@@ -13,6 +13,7 @@ Web Audio les fait entendre.
 | --- | --- |
 | `src/chips/` | Émulations registre par registre : YM2149/AY-3-8910, SN76489 (+ Tandy), NES 2A03 APU, MOS 6581/8580 SID, YM2612, YM2151, OPN (YM2203/YM2608), OPL2/OPL3, SAA1099, PC speaker, DAC PCM, Apple II et Mockingboard, expansions NES (VRC6, Sunsoft 5B, MMC5, Namco 163, FDS), cartes C/MS Game Blaster et Sound Blaster |
 | `src/chips/Dx7.ts` + `src/formats/dx7.ts` | Yamaha DX7 (FM 6 opérateurs, banques SysEx) |
+| `src/formats/soundfont.ts` + `src/chips/SoundFont.ts` + `src/instruments/soundfont.ts` | Banques SoundFont 2 de l'utilisateur : lecteur RIFF borné (`parseSf2`, SF3 refusé), lecteur d'échantillons (`SoundFontSynth`) et un instrument par préréglage (`soundFontInstruments`, hors catalogue statique) ; aucune banque livrée |
 | `src/chips/historical.ts` | Synthés historiques modélisés par architecture : synthèse additive, Casio VL-1, Synclavier, Yamaha GS-1, synthèse LA, synthèse AI |
 | `src/chips/MicroKorg.ts` | Korg microKORG (1999) : synthèse analogique modélisée, sans ROM ni échantillon (`MicroKorgSynth`, 15 programmes originaux) |
 | `src/instruments/` | Instruments jouables par note au-dessus des puces : API simple (`simple.ts`), adaptateurs PSG, synthés modélisés et puces à registres (`RegisterInstrument`), enveloppes et vibrato partagés, allocation de voix, contrôles exposés aux interfaces ; `catalogue.ts` = liste explicite de tous les modèles pour les sélecteurs d'interface (import ciblé : l'application ne charge que ce qu'elle liste) |

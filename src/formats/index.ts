@@ -28,3 +28,4 @@ export * from './midi.ts';
 export * from './d50.ts';
 export * from './spc.ts';
 export * from './midiWrite.ts';
+export * from './soundfont.ts';
