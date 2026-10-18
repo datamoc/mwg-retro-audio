@@ -59,7 +59,7 @@ const brightness = (signal: Float32Array, from = 0): number => {
 const settled = (signal: Float32Array): Float32Array => signal.subarray(Math.round(RATE * 0.1));
 
 test('every program makes bounded, finite, non silent sound at several pitches', () => {
-	assert.equal(MICROKORG_PROGRAMS.length, 12);
+	assert.equal(MICROKORG_PROGRAMS.length, 15);
 	for (const { name, program } of MICROKORG_PROGRAMS) {
 		for (const note of [36, 60, 84]) {
 			const sound = play(structuredClone(program), note, 0.6);
@@ -246,11 +246,11 @@ test('four voices at most: the oldest note gives way, and reset silences everyth
 	assert.equal(synth.preset, 4, 'program change through the register port');
 });
 
-test('the catalogue lists the microKORG with its twelve programs and it sounds', () => {
+test('the catalogue lists the microKORG with its fifteen programs and it sounds', () => {
 	const definition = instrumentCatalogue.find((entry) => entry.info.id === 'microkorg')!;
 	assert.equal(definition.info.polyphony, 4);
 	const instrument = definition.create({ sampleRate: 22050 });
-	assert.equal(instrument.presets.length, 12);
+	assert.equal(instrument.presets.length, 15);
 	for (let index = 0; index < instrument.presets.length; index++) {
 		instrument.reset();
 		instrument.applyPreset(index);

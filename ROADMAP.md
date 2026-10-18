@@ -193,7 +193,7 @@ Validé par `tools/piano-check.mjs` avec le MIDI simulé.
   hors du jeu de notes. Adaptateur d'instrument, entrée explicite dans le catalogue
   (47 modèles), presets exposés, régressions de cycle de vie comme les autres
   synthétiseurs et mesures de bundles mises à jour.
-  Livré : `src/chips/MicroKorg.ts` (`MicroKorgSynth`, 4 voix, 12 programmes originaux) et
+  Livré : `src/chips/MicroKorg.ts` (`MicroKorgSynth`, 4 voix, 15 programmes originaux) et
   son adaptateur dans `src/instruments/synths.ts` ; 47 modèles dans le catalogue, la
   démo et `CONFORMANCE.md` (hors jeu : vocodeur, accordeur, DWGS, arpégiateur, modes
   mono et unisson, effets). Aucune ROM ni échantillon. `tests/microkorg.test.ts` mesure

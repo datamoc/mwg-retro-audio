@@ -84,7 +84,7 @@
 		{
 			"id": "nes-apu",
 			"name": "NES APU NTSC — Nintendo NES / Famicom (NTSC)",
-			"peak": 0.0752,
+			"peak": 0.0946,
 			"controls": 8
 		},
 		{
@@ -102,7 +102,7 @@
 		{
 			"id": "mmc5",
 			"name": "Nintendo MMC5 — NES / Famicom (cartouche MMC5)",
-			"peak": 0.0459,
+			"peak": 0.0736,
 			"controls": 8
 		},
 		{
@@ -144,7 +144,7 @@
 		{
 			"id": "sound-blaster",
 			"name": "Sound Blaster (OPL2) — PC (Sound Blaster 1.x / 2.0)",
-			"peak": 0.1165,
+			"peak": 0.1191,
 			"controls": 6
 		},
 		{
@@ -174,13 +174,13 @@
 		{
 			"id": "gs1",
 			"name": "Yamaha GS-1",
-			"peak": 0.068,
+			"peak": 0.0706,
 			"controls": 5
 		},
 		{
 			"id": "vl1",
 			"name": "Casio VL-1",
-			"peak": 0.1071,
+			"peak": 0.1148,
 			"controls": 6
 		},
 		{
@@ -216,7 +216,7 @@
 		{
 			"id": "la-synth",
 			"name": "Structure LA",
-			"peak": 0.0578,
+			"peak": 0.0563,
 			"controls": 5
 		},
 		{
@@ -240,7 +240,7 @@
 		{
 			"id": "simple:Electric piano",
 			"name": "Electric piano",
-			"peak": 0.0105,
+			"peak": 0.0106,
 			"controls": 1
 		},
 		{
@@ -258,7 +258,7 @@
 		{
 			"id": "simple:Bass",
 			"name": "Bass",
-			"peak": 0.0117,
+			"peak": 0.0113,
 			"controls": 1
 		},
 		{
@@ -282,7 +282,7 @@
 		{
 			"id": "simple:Synth",
 			"name": "Synth",
-			"peak": 0.008,
+			"peak": 0.0083,
 			"controls": 1
 		}
 	],

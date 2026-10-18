@@ -40,6 +40,22 @@ const readVlq = (b: Uint8Array, p: number): [number, number] => {
 	return [v, p];
 };
 
+/**
+ * The song without the silence before its first note: the time of the first note-on is cut from every later event, and the
+ * setup messages sent before it (program changes, controllers, tempo-less meta data) are kept at time 0. A song that
+ * starts on its first note, or that has no note, is returned as it is.
+ */
+export function trimLeadingSilence(song: MidiSong): MidiSong {
+	const first = song.events.find((event) => (event.status & 0xf0) === 0x90 && event.data2 > 0);
+	if (!first || first.time <= 0) return song;
+	const offset = first.time;
+	return {
+		...song,
+		events: song.events.map((event) => ({ ...event, time: Math.max(0, event.time - offset) })),
+		duration: Math.max(0, song.duration - offset),
+	};
+}
+
 export function isSmf(b: Uint8Array): boolean {
 	return b.length > 14 && String.fromCharCode(...b.subarray(0, 4)) === 'MThd';
 }

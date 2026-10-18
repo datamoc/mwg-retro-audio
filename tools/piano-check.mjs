@@ -357,6 +357,15 @@ for (const [mode, check] of [
 	await fallback.close();
 }
 
+// le silence du début d'un morceau est ignoré : Méditation compte 3,7 s avant sa première note (4:30 -> 4:26)
+const lead = await newPage();
+await enableSound(lead);
+await lead.selectOption('#song', { label: 'Massenet — Méditation de Thaïs' });
+await lead.waitForTimeout(300);
+const leadClock = await lead.evaluate(() => document.getElementById('clock').textContent);
+if (!/ \/ 4:26 /.test(leadClock)) record('lead-silence', `clock: ${leadClock}`);
+await lead.close();
+
 // point 4 : MIDI simulé — note-on/off, vélocité, sustain, all-notes-off, déconnexion
 const midiPage = await newPage();
 await enableSound(midiPage);

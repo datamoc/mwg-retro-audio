@@ -2,7 +2,7 @@ import { instrumentCatalogue } from '../../src/instruments/catalogue.ts';
 import type { Instrument } from '../../src/instruments/Instrument.ts';
 import { RetroStream } from '../../src/driver/RetroStream.ts';
 import { InstrumentMidiSink } from '../../src/instruments/InstrumentMidiSink.ts';
-import { isXmi, MidiPlayer, parseSmf, xmiToSmf } from '../../src/formats/midi.ts';
+import { isXmi, MidiPlayer, parseSmf, trimLeadingSilence, xmiToSmf } from '../../src/formats/midi.ts';
 import type { MidiEvent, MidiSong } from '../../src/formats/midi.ts';
 import { writeSmf } from '../../src/formats/midiWrite.ts';
 import { renderPlayer } from '../../src/driver/Renderer.ts';
@@ -340,7 +340,8 @@ const progress = element<HTMLProgressElement>('progress');
 const chain = element<HTMLInputElement>('chain');
 const format = (seconds: number): string =>
 	`${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
-const readSong = (bytes: Uint8Array): MidiSong => parseSmf(isXmi(bytes) ? xmiToSmf(bytes) : bytes);
+/** a song as the page plays it: without the silence before the first note */
+const readSong = (bytes: Uint8Array): MidiSong => trimLeadingSilence(parseSmf(isXmi(bytes) ? xmiToSmf(bytes) : bytes));
 
 /** a song of the list: the songs of the page, the files and the folder of the user, and the last take */
 interface Entry {
