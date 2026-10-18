@@ -4,6 +4,10 @@
 	"description": "Historical synthesizers and sound chips for mwg games, and a universal player for pre-MP3 electronic music: pure TypeScript (YM2149/AY, SID, NES APU, SN76489, YM2612, YM2151, OPL2/OPL3, DX7 and other historical synths) on the native Web Audio API, with players for YM, VGM/VGZ, NSF/NSFE, PSID, SPC, MIDI/XMI, MOD/XM/S3M/IT, DRO, IMF, CMF, HSC, RAD, ROL, D00, SCI, WAV and VOC files",
 	"type": "module",
 	"license": "MPL-2.0",
+	"funding": {
+		"type": "individual",
+		"url": "https://buy.stripe.com/bJe8wOeUq4oZ2kXfyeaIM00"
+	},
 	"main": "./dist/index.js",
 	"types": "./dist/index.d.ts",
 	"exports": {
@@ -81,16 +85,16 @@
 		"format:check": "prettier --check src tests"
 	},
 	"peerDependencies": {
-		"@datamoc/mw_games": ">=0.42.0"
+		"@datamoc/mwg": ">=0.45.0"
 	},
 	"peerDependenciesMeta": {
-		"@datamoc/mw_games": {
+		"@datamoc/mwg": {
 			"optional": true
 		}
 	},
 	"devDependencies": {
 		"esbuild": "^0.28.2",
-		"@datamoc/mw_games": "file:../mwg",
+		"@datamoc/mwg": "file:../mwg",
 		"@types/node": "^26.6.5",
 		"prettier": "^3.9.10",
 		"tsx": "^4.23.15",
