@@ -57,7 +57,14 @@ const server = createServer(async (request, response) => {
 		response.end('not found');
 	}
 });
-await new Promise((done) => server.listen(0, '127.0.0.1', done));
+// Chrome refuses a few ports (10080 among them): take another one when the system hands out such a port
+const BLOCKED_PORTS = new Set([2049, 3659, 4045, 4190, 5060, 5061, 6000, 6566, 6679, 6697, 10080]);
+for (;;) {
+	await new Promise((done) => server.listen(0, '127.0.0.1', done));
+	const { port } = server.address();
+	if (!BLOCKED_PORTS.has(port) && !(port >= 6665 && port <= 6669)) break;
+	await new Promise((done) => server.close(done));
+}
 const url = `http://127.0.0.1:${server.address().port}`;
 
 const instrumentScript = `

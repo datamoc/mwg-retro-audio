@@ -186,13 +186,19 @@ Validé par `tools/piano-check.mjs` avec le MIDI simulé.
   adapté, moteur MIDI du point précédent). Aucune banque livrée avec le paquet :
   l'utilisateur ouvre ses propres fichiers, selon la règle « aucune ROM, aucun
   échantillon issu d'une ROM » de `CONFORMANCE.md`.
-- [ ] Ajouter le Korg microKORG (1999) comme synthétiseur modélisé : deux oscillateurs
+- [x] Ajouter le Korg microKORG (1999) comme synthétiseur modélisé : deux oscillateurs
   analogiques modélisés et sous-oscillateur, sync et ring modulant, filtre multimode
   à résonance, enveloppes de filtre et d'ampli, LFO, programmes évocateurs des
   banques du microKORG — sans ROM ni échantillon ; le vocodeur et l'accordeur restent
   hors du jeu de notes. Adaptateur d'instrument, entrée explicite dans le catalogue
   (47 modèles), presets exposés, régressions de cycle de vie comme les autres
   synthétiseurs et mesures de bundles mises à jour.
+  Livré : `src/chips/MicroKorg.ts` (`MicroKorgSynth`, 4 voix, 12 programmes originaux) et
+  son adaptateur dans `src/instruments/synths.ts` ; 47 modèles dans le catalogue, la
+  démo et `CONFORMANCE.md` (hors jeu : vocodeur, accordeur, DWGS, arpégiateur, modes
+  mono et unisson, effets). Aucune ROM ni échantillon. `tests/microkorg.test.ts` mesure
+  justesse, filtres, résonance, ring, sync, enveloppes et polyphonie ; mesures de
+  bundles : catalogue 159 007 o (profil et puce seuls inchangés).
 
 Les points 5 et 6 restent réalisables dans ce projet, sans modification d'un autre ;
 SoundFonts et microKORG ajoutent leurs modules propres et ne doivent rien imposer aux

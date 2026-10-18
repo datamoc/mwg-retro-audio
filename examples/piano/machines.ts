@@ -51,6 +51,7 @@ export const machines: Readonly<Record<string, Machines>> = {
 	mt32: { group: 'synths', computers: ['PC', 'NEC PC-98'], other: ['Roland MT-32 ({module})'] },
 	d50: { group: 'synths', other: ['Roland D-50 ({keyboard}, 1987)'] },
 	m1: { group: 'synths', other: ['Korg M1 ({keyboard}, 1988)'] },
+	microkorg: { group: 'synths', other: ['Korg microKORG ({keyboard}, 1999)'] },
 	gs1: { group: 'synths', other: ['Yamaha GS-1 ({keyboard}, 1981)'] },
 	vl1: { group: 'synths', other: ['Casio VL-1 ({calculator}, 1979)'] },
 	dx7: { group: 'synths', other: ['Yamaha DX7 ({keyboard}, 1983)'] },

@@ -22,12 +22,12 @@ et les écouteurs.
 
 ## Catalogue
 
-46 modèles jouables, issus du catalogue explicite `src/instruments/catalogue.ts`:
+47 modèles jouables, issus du catalogue explicite `src/instruments/catalogue.ts`:
 
 - neuf profils simples (piano, piano électrique, orgue, guitare, basse, cordes,
   cuivres, flûte, synthé) ;
 - YM2149 et AY-3-8910 ;
-- D-50, M1, GS-1, VL-1, DX7, synthèse additive Bell Labs et Dartmouth,
+- D-50, M1, microKORG, GS-1, VL-1, DX7, synthèse additive Bell Labs et Dartmouth,
   Synclavier, structures LA/AI, MT-32 ;
 - SN76489 et Tandy, MOS 6581 et 8580 (SID), APU NES NTSC et PAL, VRC6, MMC5,
   Sunsoft 5B, Namco 163 et Famicom Disk System ;
@@ -47,7 +47,7 @@ réglages, la déconnexion MIDI, le refus et l’absence de Web MIDI et la libé
 du contexte à la fermeture sont vérifiés. Résultat détaillé :
 `check-results.json` dans ce dossier.
 
-Du 17 octobre 2026 : 46 modèles, 0 problème, sans erreur console.
+Du 18 octobre 2026 : 47 modèles, 0 problème, sans erreur console (46 modèles le 17 octobre, avant le microKORG).
 
 Le MIDI est simulé par une fausse API Web MIDI injectée dans la page : les
 messages note-on/off, vélocité, sustain et all-notes-off sont bien exercés côté

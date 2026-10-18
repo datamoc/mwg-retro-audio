@@ -1,6 +1,8 @@
 import { D50Synth, D50_PRESETS, Gs1, GS1_PRESETS, Vl1 } from '../chips/historical.ts';
 import { M1Synth, M1_PRESETS } from '../chips/M1.ts';
 import { Dx7Synth } from '../chips/Dx7.ts';
+import { MicroKorgSynth, MICROKORG_PROGRAMS } from '../chips/MicroKorg.ts';
+import type { MicroKorgProgram } from '../chips/MicroKorg.ts';
 import { parseDx7Voice } from '../formats/dx7.ts';
 import type { InstrumentDef } from './Instrument.ts';
 import { choiceControl, labelled, param } from './controls.ts';
@@ -308,6 +310,314 @@ export const historicalInstruments: readonly InstrumentDef[] = [
 				},
 			);
 			instrument.chip.loadVoice(voice);
+		},
+	),
+	definition(
+		'microkorg',
+		'Korg microKORG',
+		'1999',
+		4,
+		(options) => new MicroKorgSynth(options),
+		(instrument) => {
+			instrument.presetChoice(
+				MICROKORG_PROGRAMS.map((preset) => preset.name),
+				(index) => {
+					const p: MicroKorgProgram = structuredClone(MICROKORG_PROGRAMS[index].program);
+					instrument.chip.loadProgram(p);
+					const choose = <T extends string>(
+						id: string,
+						label: string,
+						values: readonly T[],
+						get: () => T,
+						set: (value: T) => void,
+					): void => {
+						instrument.controls.push(
+							choiceControl({ id, label }, labelled(values), param(values.indexOf(get())), (value) =>
+								set(values[value]),
+							),
+						);
+					};
+					choose(
+						'osc1.wave',
+						'Oscillateur 1 : onde',
+						['saw', 'square', 'triangle', 'sine', 'noise'],
+						() => p.osc1.wave,
+						(value) => {
+							p.osc1.wave = value;
+						},
+					);
+					instrument.number(
+						'osc1.pulse',
+						'Oscillateur 1 : largeur d’impulsion',
+						0.05,
+						0.95,
+						0.01,
+						() => p.osc1.pulseWidth,
+						(value) => {
+							p.osc1.pulseWidth = value;
+						},
+					);
+					instrument.number(
+						'osc1.level',
+						'Oscillateur 1 : niveau',
+						0,
+						1,
+						0.01,
+						() => p.osc1.level,
+						(value) => {
+							p.osc1.level = value;
+						},
+					);
+					choose(
+						'osc2.wave',
+						'Oscillateur 2 : onde',
+						['saw', 'square', 'triangle'],
+						() => p.osc2.wave,
+						(value) => {
+							p.osc2.wave = value;
+						},
+					);
+					instrument.number(
+						'osc2.semitone',
+						'Oscillateur 2 : demi-tons',
+						-24,
+						24,
+						1,
+						() => p.osc2.semitone,
+						(value) => {
+							p.osc2.semitone = value;
+						},
+					);
+					instrument.number(
+						'osc2.fine',
+						'Oscillateur 2 : accord fin',
+						-50,
+						50,
+						1,
+						() => p.osc2.fine,
+						(value) => {
+							p.osc2.fine = value;
+						},
+						'cents',
+					);
+					instrument.number(
+						'osc2.level',
+						'Oscillateur 2 : niveau',
+						0,
+						1,
+						0.01,
+						() => p.osc2.level,
+						(value) => {
+							p.osc2.level = value;
+						},
+					);
+					choose(
+						'sync',
+						'Oscillateur 2 : ring / sync',
+						['off', 'ring', 'sync', 'ring+sync'],
+						() => p.sync,
+						(value) => {
+							p.sync = value;
+						},
+					);
+					instrument.number(
+						'sub',
+						'Sous-oscillateur',
+						0,
+						1,
+						0.01,
+						() => p.sub,
+						(value) => {
+							p.sub = value;
+						},
+					);
+					instrument.number(
+						'noise',
+						'Bruit',
+						0,
+						1,
+						0.01,
+						() => p.noise,
+						(value) => {
+							p.noise = value;
+						},
+					);
+					choose(
+						'filter.type',
+						'Filtre : type',
+						['lp24', 'lp12', 'bp12', 'hp12'],
+						() => p.filter.type,
+						(value) => {
+							p.filter.type = value;
+						},
+					);
+					instrument.number(
+						'filter.cutoff',
+						'Filtre : coupure',
+						20,
+						20000,
+						10,
+						() => p.filter.cutoff,
+						(value) => {
+							p.filter.cutoff = value;
+						},
+						'Hz',
+					);
+					instrument.number(
+						'filter.resonance',
+						'Filtre : résonance',
+						0,
+						1,
+						0.01,
+						() => p.filter.resonance,
+						(value) => {
+							p.filter.resonance = value;
+						},
+					);
+					instrument.number(
+						'filter.env',
+						'Filtre : intensité de l’enveloppe',
+						-6,
+						6,
+						0.1,
+						() => p.filter.envAmount,
+						(value) => {
+							p.filter.envAmount = value;
+						},
+						'octaves',
+					);
+					instrument.number(
+						'filter.key',
+						'Filtre : suivi du clavier',
+						0,
+						1,
+						0.05,
+						() => p.filter.keyTrack,
+						(value) => {
+							p.filter.keyTrack = value;
+						},
+					);
+					for (const [group, label, envelope] of [
+						['amp', 'Ampli', p.ampEnv],
+						['filterEnv', 'Enveloppe du filtre', p.filterEnv],
+					] as const) {
+						instrument.number(
+							`${group}.attack`,
+							`${label} : attaque`,
+							0.001,
+							5,
+							0.001,
+							() => envelope.attack,
+							(value) => {
+								envelope.attack = value;
+							},
+							's',
+						);
+						instrument.number(
+							`${group}.decay`,
+							`${label} : chute`,
+							0.01,
+							5,
+							0.01,
+							() => envelope.decay,
+							(value) => {
+								envelope.decay = value;
+							},
+							's',
+						);
+						instrument.number(
+							`${group}.sustain`,
+							`${label} : tenue`,
+							0,
+							1,
+							0.01,
+							() => envelope.sustain,
+							(value) => {
+								envelope.sustain = value;
+							},
+						);
+						instrument.number(
+							`${group}.release`,
+							`${label} : relâchement`,
+							0.01,
+							5,
+							0.01,
+							() => envelope.release,
+							(value) => {
+								envelope.release = value;
+							},
+							's',
+						);
+					}
+					choose(
+						'lfo.wave',
+						'LFO : onde',
+						['triangle', 'saw', 'square', 'random'],
+						() => p.lfo.wave,
+						(value) => {
+							p.lfo.wave = value;
+						},
+					);
+					instrument.number(
+						'lfo.rate',
+						'LFO : vitesse',
+						0.05,
+						30,
+						0.05,
+						() => p.lfo.rate,
+						(value) => {
+							p.lfo.rate = value;
+						},
+						'Hz',
+					);
+					instrument.number(
+						'lfo.pitch',
+						'LFO : hauteur',
+						0,
+						200,
+						1,
+						() => p.lfo.pitchCents,
+						(value) => {
+							p.lfo.pitchCents = value;
+						},
+						'cents',
+					);
+					instrument.number(
+						'lfo.cutoff',
+						'LFO : coupure',
+						0,
+						4,
+						0.1,
+						() => p.lfo.cutoffOctaves,
+						(value) => {
+							p.lfo.cutoffOctaves = value;
+						},
+						'octaves',
+					);
+					instrument.number(
+						'lfo.amp',
+						'LFO : volume',
+						0,
+						1,
+						0.01,
+						() => p.lfo.amp,
+						(value) => {
+							p.lfo.amp = value;
+						},
+					);
+					instrument.number(
+						'lfo.pwm',
+						'LFO : largeur d’impulsion',
+						0,
+						0.45,
+						0.01,
+						() => p.lfo.pulseWidth,
+						(value) => {
+							p.lfo.pulseWidth = value;
+						},
+					);
+				},
+			);
 		},
 	),
 ];

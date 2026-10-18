@@ -21,7 +21,7 @@
     },
     "chipBarrel": {
       "bytes": 3170,
-      "gzipBytes": 1344,
+      "gzipBytes": 1343,
       "modules": [
         "dist/chips/Ym2149.js",
         "chipBarrel.ts"
@@ -29,15 +29,15 @@
     },
     "chipRoot": {
       "bytes": 3170,
-      "gzipBytes": 1344,
+      "gzipBytes": 1343,
       "modules": [
         "dist/chips/Ym2149.js",
         "chipRoot.ts"
       ]
     },
     "catalogue": {
-      "bytes": 148318,
-      "gzipBytes": 47769,
+      "bytes": 159007,
+      "gzipBytes": 50769,
       "modules": [
         "dist/chips/Ym2149.js",
         "dist/instruments/controls.js",
@@ -51,6 +51,7 @@
         "dist/driver/Resampler.js",
         "dist/chips/fm.js",
         "dist/chips/Dx7.js",
+        "dist/chips/MicroKorg.js",
         "dist/formats/dx7.js",
         "dist/instruments/SynthInstrument.js",
         "dist/instruments/synths.js",
@@ -96,8 +97,8 @@
       ]
     },
     "mwgCatalogue": {
-      "bytes": 168544,
-      "gzipBytes": 55389,
+      "bytes": 179222,
+      "gzipBytes": 58380,
       "modules": [
         "dist/chips/Ym2149.js",
         "dist/instruments/controls.js",
@@ -111,6 +112,7 @@
         "dist/driver/Resampler.js",
         "dist/chips/fm.js",
         "dist/chips/Dx7.js",
+        "dist/chips/MicroKorg.js",
         "dist/formats/dx7.js",
         "dist/instruments/SynthInstrument.js",
         "dist/instruments/synths.js",
@@ -147,8 +149,8 @@
       ]
     },
     "business": {
-      "bytes": 119941,
-      "gzipBytes": 38195,
+      "bytes": 127928,
+      "gzipBytes": 40476,
       "modules": [
         "dist/chips/index.js",
         "dist/chips/BoxRenderer.js",
@@ -167,6 +169,7 @@
         "dist/chips/historical.js",
         "dist/chips/m1Data.js",
         "dist/chips/M1.js",
+        "dist/chips/MicroKorg.js",
         "dist/chips/Ym2612.js",
         "dist/chips/Opn.js",
         "dist/chips/PcSpeaker.js",

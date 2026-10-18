@@ -7,6 +7,7 @@ import { AppleSpeaker, Mockingboard } from './AppleII.ts';
 import { Dx7Synth } from './Dx7.ts';
 import { AdditiveSynth, AiSynth, D50Synth, Gs1, LaSynth, Synclavier, Vl1 } from './historical.ts';
 import { M1Synth } from './M1.ts';
+import { MicroKorgSynth } from './MicroKorg.ts';
 import { Opl } from './Opl.ts';
 import { Opn } from './Opn.ts';
 import { PcmDac } from './PcmDac.ts';
@@ -30,6 +31,7 @@ export { Ym2151 } from './Ym2151.ts';
 export { Mt32Synth } from './Mt32Synth.ts';
 export { M1Synth, M1_PRESETS, type M1Lfo, type M1Osc, type M1Program } from './M1.ts';
 export { M1_ATTACKS, M1_LOOPS } from './m1Data.ts';
+export { MicroKorgSynth, MICROKORG_PROGRAMS, type MicroKorgProgram } from './MicroKorg.ts';
 export { Opn, type OpnOptions } from './Opn.ts';
 export { AppleSpeaker, Mockingboard, type MockingboardOptions } from './AppleII.ts';
 export {
@@ -110,6 +112,7 @@ const builtins: Readonly<Record<string, ChipFactory>> = {
 	gs1: (o) => new Gs1(o),
 	d50: (o) => new D50Synth(o),
 	m1: (o) => new M1Synth(o),
+	microkorg: (o) => new MicroKorgSynth(o),
 	namco163: (o) => new Namco163(o),
 	fds: (o) => new Fds(o),
 	vrc6: (o) => new Vrc6(o),

@@ -5,7 +5,7 @@ import { Ym2149 } from '../src/chips/Ym2149.ts';
 
 test('builtin factories remain discoverable and preserve AY and OPL variants', () => {
 	const ids = chipIds();
-	assert.equal(ids.length, 33);
+	assert.equal(ids.length, 34);
 	assert.equal(new Set(ids).size, ids.length);
 	for (const id of ids) {
 		const chip = createChip(id, { sampleRate: 8000 });
