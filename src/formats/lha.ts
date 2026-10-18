@@ -3,6 +3,7 @@
  * (Huffman + sliding window, 8 / 32 / 64 KiB). Header levels 0, 1 and 2 are understood. Atari ST `.ym` files are
  * almost always a single file packed with `-lh5-`.
  */
+import { DEFAULT_MAX_OUTPUT } from './inflate.ts';
 
 const THRESHOLD = 3;
 const MAXMATCH = 256;
@@ -238,9 +239,11 @@ export function isLha(buf: Uint8Array): boolean {
 }
 
 /** Extract the first file of an LHA archive */
-export function unlha(buf: Uint8Array): Uint8Array {
+export function unlha(buf: Uint8Array, maxOutput = DEFAULT_MAX_OUTPUT): Uint8Array {
 	const e = parseLhaHeader(buf);
 	if (!e) throw new Error('not an LHA archive');
+	if (e.originalSize > maxOutput)
+		throw new Error(`LHA: the archive claims ${e.originalSize} bytes, over the limit of ${maxOutput}`);
 	if (e.method === '-lh0-' || e.method === '-lhd-') return buf.slice(e.dataOffset, e.dataOffset + e.originalSize);
 	const m = METHODS[e.method];
 	if (!m) throw new Error(`unsupported LHA method ${e.method}`);

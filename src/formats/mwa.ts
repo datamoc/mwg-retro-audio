@@ -236,6 +236,14 @@ export function decodeMwa(bytes: Uint8Array): MwaData {
 }
 
 /** Options common to every loader: the sample rate and an optional chip factory (how recording hooks in) */
+/**
+ * Where an emulated program's instructions are counted: `spend(count)` throws once the allowance is used up.
+ * mwg's `InstructionBudget` (`@datamoc/mwg/audio`) has this shape; nothing here imports it.
+ */
+export interface InstructionSpender {
+	spend(count?: number): void;
+}
+
 export interface LoadOptions {
 	/** output sample rate in Hz (default 44100) */
 	sampleRate?: number;
@@ -243,6 +251,11 @@ export interface LoadOptions {
 	chipFactory?: (id: string, options: ChipOptions & Record<string, unknown>) => Chip;
 	/** loop the music at its loop point instead of ending (default false) */
 	loop?: boolean;
+	/**
+	 * counts the instructions an emulated program (NSF, PSID, SPC) runs while it plays, so a hostile or
+	 * broken file fails by name instead of rendering slower than real time; unlimited when omitted
+	 */
+	budget?: InstructionSpender;
 }
 
 /** Plays an MWA file: the timed register writes drive the chips, which render the audio */

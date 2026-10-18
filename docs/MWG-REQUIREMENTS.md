@@ -25,7 +25,7 @@ Côté paquet, les adaptateurs qui consomment ces contrats vivent dans `src/mwg/
 | --- | --- | --- |
 | 1.1 moteurs MIDI nommés | `registerMidiSynth` / `resolveMidiSynth` / `renderMidiThroughSynth` | `retroMidiEngines`, `registerRetroMidiEngines(registerMidiSynth)` : `retro:mt32`, `retro:dx7` (banques SysEx incluses), `retro:d50` ; les 48 modèles du catalogue (`retro:<id>`, `retro:ym2149`, `retro:sid`…) par `@datamoc/mwg-retro-audio/mwg/catalogue` (`registerRetroCatalogueMidiEngines`), ou un choix de modèles par `instrumentMidiEngines(définitions)` |
 | 1.3 contrat de flux continu | `StreamPlayable`, `StreamChannel`, `BlockSource` | `retroBlockSource(player)` et `retroLoopRegion(player)` |
-| 1.4 budgets de décodage | `decoderLimits`, `assertInputSize`, `createBudgetedLoader` | utilisables tels quels autour de `loadFile` / `retroBusLoader` ; **encore ouvert** : crochets de budget d'instructions dans les émulateurs 6502 (NSF/PSID) et SPC, que nos chargeurs n'exposent pas encore |
+| 1.4 budgets de décodage | `decoderLimits`, `assertInputSize`, `createBudgetedLoader` | utilisables tels quels autour de `loadFile` / `retroBusLoader` ; budget d'instructions des émulateurs 6502 (NSF/PSID) et SPC : option `budget` de `LoadOptions` (voir 11.0) |
 | 1.6 effets en données | `SfxBank`, `SfxBackend`, arbitre | `retroSfxBackend({ engine })`, `toMwgSfxDefinition`, `SfxEngine.isActive(id)` |
 | 1.8 étage de sortie et réglages | `AudioSettings` (`region`, `outputStage`, `soften`, `dynamics`) | `retroLoadFor`, `retroOutputFor`, `retroSfxEngineOptionsFor` |
 | 7. doubles de test | `FakeRetroPlayer`, `FakeAudioContext`, `FakeBlockSource` | `tests/mwg.test.ts` joue l'interopérabilité réelle contre ces doubles |
@@ -386,7 +386,21 @@ l'auteur garde où il veut, le dépôt ne tenant que la liste de référence des
 Tout est dans l'arbre de travail de mwg au 18 octobre 2026, non commité ni publié, vérifié par ses tests (plus de 3 300)
 et, pour l'hôte hors fil principal, contre les moteurs de ce paquet. Le plus utile pour ce paquet vient en premier.
 
-### 11.1 Cœurs empaquetés pour l'hôte hors fil principal (`factorySource`) : à fournir par le paquet
+### 11.0 État des échanges (18 octobre 2026)
+
+| Demande de mwg | Côté paquet | Vérifié par |
+| --- | --- | --- |
+| 11.1 cœurs empaquetés (`retroCoreSource`) | livré (commit a0f34d2) | `tools/check-retro-cores.mjs` de mwg : les 48 moteurs du catalogue donnent une sortie identique au rendu direct, avec et sans pré-rendu de silence |
+| 11.1 `reset()` qui restaure l'état d'origine (D-50, MT-32, VL-1) | livré (même commit) | même contrôle, avec `--prefetch` |
+| 11.4 `inspectPatch` pour le D-50 (`inspectD50Patch`) | livré (même commit) | `verifyPackage` de mwg sur les 6 premières banques réelles de `download/Roland D50` : le paquet reste valide, l'avertissement nomme les patchs et les ondes (par exemple 10 patchs sur 64 dans la première) |
+| 1.4 budget d'instructions des lecteurs NSF, PSID et SPC | **ajouté ensuite** : option `budget` (`InstructionSpender`, un `spend(nombre)` qui lève) dans `LoadOptions` | `tests/instruction-budget.test.ts` du paquet, et le vrai `InstructionBudget` de mwg contre un NSF qui ne rend jamais la main : `DecodeBudgetError` (`maxInstructionsPerSecond`) |
+| 5 garde-fous des lecteurs : bombes DEFLATE, gzip et LHA | **ajouté ensuite** : `inflateRaw`, `gunzip`, `unzlib` et `unlha` plafonnent la sortie à `DEFAULT_MAX_OUTPUT` (64 Mio, comme `decoderLimits` de mwg), quelle que soit la taille annoncée par le fichier | `tests/decoder-limits.test.ts` du paquet : bombe DEFLATE de moins de 20 Ko pour 8 Mio, trailer gzip annonçant 4 Gio, en-tête LHA annonçant 4 Gio |
+
+Les deux derniers éléments ont été écrits par la session de mwg dans ce dépôt, non commités ; c'est à ce paquet de
+les relire et de les garder ou non. Le plafond n'est pas configurable depuis `loadFile` : seul l'appel direct à
+`inflateRaw(données, début, taille, plafond)` ou `unlha(données, plafond)` le change.
+
+### 11.1 Cœurs empaquetés pour l'hôte hors fil principal (`factorySource`) : livrés, voir 11.0
 
 **La contrainte.** `AudioCoreHost` (mwg, `@datamoc/mwg/audio`) fait tourner un cœur de synthèse dans un Worker. Un
 Worker ne reçoit que du **texte** : la fabrique du cœur est envoyée par `Function.prototype.toString`, donc elle ne

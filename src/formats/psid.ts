@@ -3,7 +3,7 @@ import { createChip } from '../chips/index.ts';
 import { FramePlayer, type PlayerInfo } from '../players/Player.ts';
 import { Clocks, FrameRates, Region } from '../region.ts';
 import { Cpu6502 } from './cpu6502.ts';
-import type { LoadOptions } from './mwa.ts';
+import type { InstructionSpender, LoadOptions } from './mwa.ts';
 
 export interface PsidOptions extends LoadOptions {
 	/** song number, 1-based (default: the file's start song) */
@@ -103,12 +103,14 @@ export class PsidPlayer extends FramePlayer {
 	private cia = 0;
 	private frameStart = 0;
 	private totalCycles = 0;
+	private readonly budget?: InstructionSpender;
 
 	constructor(
 		readonly file: PsidFile,
 		options: PsidOptions = {},
 	) {
 		super(options.sampleRate ?? 44100);
+		this.budget = options.budget;
 		const clockBits = (file.flags >> 2) & 3;
 		this.pal =
 			clockBits === 2 ? false : clockBits === 1 || clockBits === 3 ? true : (options.standard ?? 'pal') === 'pal';
@@ -193,8 +195,21 @@ export class PsidPlayer extends FramePlayer {
 		cpu.sp = 0xfd;
 		cpu.p = 0x24;
 		cpu.jsr(addr, SENTINEL);
-		const stop = cpu.cycles + limit;
-		while (cpu.pc !== SENTINEL && cpu.cycles < stop) cpu.step();
+		this.runBounded(cpu.cycles + limit);
+	}
+
+	/** steps the CPU to the sentinel or the cycle limit, charging the instructions run to the budget */
+	private runBounded(stop: number): void {
+		const cpu = this.cpu;
+		let instructions = 0;
+		try {
+			while (cpu.pc !== SENTINEL && cpu.cycles < stop) {
+				cpu.step();
+				instructions++;
+			}
+		} finally {
+			this.budget?.spend(instructions);
+		}
 	}
 
 	/** IRQ-driven tunes: enter the handler the tune installed, as the hardware IRQ would */
@@ -208,8 +223,7 @@ export class PsidPlayer extends FramePlayer {
 		cpu.pushStatus();
 		cpu.pc = vec;
 		cpu.p |= 4;
-		const stop = cpu.cycles + 2_000_000;
-		while (cpu.pc !== SENTINEL && cpu.cycles < stop) cpu.step();
+		this.runBounded(cpu.cycles + 2_000_000);
 	}
 
 	protected beginFrame(): boolean {

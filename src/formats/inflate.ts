@@ -36,6 +36,13 @@ function buildTable(lengths: ArrayLike<number>, n: number): Table {
 let fixedLit: Table | null = null;
 let fixedDist: Table | null = null;
 
+/**
+ * The most bytes a decoder here will produce unless told otherwise: 64 MiB, the same default as mwg's
+ * `decoderLimits().maxOutputBytes`. A few kilobytes of DEFLATE or LHA can claim gigabytes, and a
+ * file's own declared size is never a reason to allocate it.
+ */
+export const DEFAULT_MAX_OUTPUT = 64 * 1024 * 1024;
+
 class Inflater {
 	private pos: number;
 	private bitBuf = 0;
@@ -47,9 +54,10 @@ class Inflater {
 		private readonly data: Uint8Array,
 		start: number,
 		expectedSize: number,
+		private readonly maxOutput: number,
 	) {
 		this.pos = start;
-		this.out = new Uint8Array(Math.max(1024, expectedSize || data.length * 4));
+		this.out = new Uint8Array(Math.min(maxOutput, Math.max(1024, expectedSize || data.length * 4)));
 	}
 
 	private bits(n: number): number {
@@ -82,7 +90,9 @@ class Inflater {
 
 	private ensure(extra: number): void {
 		if (this.outPos + extra <= this.out.length) return;
-		const bigger = new Uint8Array(Math.max(this.out.length * 2, this.outPos + extra));
+		if (this.outPos + extra > this.maxOutput)
+			throw new Error(`inflate: output over the limit of ${this.maxOutput} bytes`);
+		const bigger = new Uint8Array(Math.min(this.maxOutput, Math.max(this.out.length * 2, this.outPos + extra)));
 		bigger.set(this.out.subarray(0, this.outPos));
 		this.out = bigger;
 	}
@@ -173,9 +183,12 @@ class Inflater {
 	}
 }
 
-/** Decode a raw DEFLATE stream starting at `start`; `expectedSize` is only a hint to size the buffer */
-export function inflateRaw(data: Uint8Array, start = 0, expectedSize = 0): Uint8Array {
-	return new Inflater(data, start, expectedSize).run().data;
+/**
+ * Decode a raw DEFLATE stream starting at `start`; `expectedSize` is only a hint to size the buffer, and
+ * `maxOutput` (`DEFAULT_MAX_OUTPUT` when omitted) is the most it will produce before throwing.
+ */
+export function inflateRaw(data: Uint8Array, start = 0, expectedSize = 0, maxOutput = DEFAULT_MAX_OUTPUT): Uint8Array {
+	return new Inflater(data, start, expectedSize, maxOutput).run().data;
 }
 
 /** true when the bytes start like a gzip member */
@@ -184,7 +197,7 @@ export function isGzip(data: Uint8Array): boolean {
 }
 
 /** Decode a gzip file (the first member): used by `.vgz` */
-export function gunzip(data: Uint8Array): Uint8Array {
+export function gunzip(data: Uint8Array, maxOutput = DEFAULT_MAX_OUTPUT): Uint8Array {
 	if (!isGzip(data)) throw new Error('gunzip: not a gzip stream');
 	const flags = data[3];
 	let p = 10;
@@ -193,15 +206,15 @@ export function gunzip(data: Uint8Array): Uint8Array {
 	if (flags & 16) while (data[p++] !== 0);
 	if (flags & 2) p += 2;
 	const size = new DataView(data.buffer, data.byteOffset, data.byteLength).getUint32(data.length - 4, true);
-	return inflateRaw(data, p, size);
+	return inflateRaw(data, p, size, maxOutput);
 }
 
 /** Decode a zlib stream (2 byte header) */
-export function unzlib(data: Uint8Array): Uint8Array {
+export function unzlib(data: Uint8Array, maxOutput = DEFAULT_MAX_OUTPUT): Uint8Array {
 	if (data.length < 6 || (data[0] & 15) !== 8 || ((data[0] << 8) | data[1]) % 31 !== 0) {
 		throw new Error('unzlib: not a zlib stream');
 	}
-	return inflateRaw(data, 2);
+	return inflateRaw(data, 2, 0, maxOutput);
 }
 
 /** DEFLATE using only stored blocks: always valid, never smaller */

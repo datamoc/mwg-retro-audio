@@ -3,7 +3,7 @@ import { createChip } from '../chips/index.ts';
 import { FramePlayer, type PlayerInfo } from '../players/Player.ts';
 import { Region } from '../region.ts';
 import { Cpu6502 } from './cpu6502.ts';
-import type { LoadOptions } from './mwa.ts';
+import type { InstructionSpender, LoadOptions } from './mwa.ts';
 
 export interface NsfOptions extends LoadOptions {
 	/** song to play, 1-based (default: the file's start song) */
@@ -193,6 +193,7 @@ export class NsfPlayer extends FramePlayer {
 	private readonly bus: NesBus;
 	private readonly pal: boolean;
 	private readonly cpuClock: number;
+	private readonly budget?: InstructionSpender;
 	private readonly rate: number;
 	private song: number;
 	private started = false;
@@ -202,6 +203,7 @@ export class NsfPlayer extends FramePlayer {
 		options: NsfOptions = {},
 	) {
 		super(options.sampleRate ?? 44100);
+		this.budget = options.budget;
 		this.pal = (file.region & 1) !== 0 && (file.region & 2) === 0;
 		this.cpuClock = this.pal ? 1_662_607 : 1_789_773;
 		const speed = this.pal ? file.speedPal : file.speedNtsc;
@@ -314,7 +316,15 @@ export class NsfPlayer extends FramePlayer {
 		cpu.sp = 0xfd;
 		cpu.jsr(addr, SENTINEL);
 		const stop = cpu.cycles + limit;
-		while (cpu.pc !== SENTINEL && cpu.cycles < stop) cpu.step();
+		let instructions = 0;
+		try {
+			while (cpu.pc !== SENTINEL && cpu.cycles < stop) {
+				cpu.step();
+				instructions++;
+			}
+		} finally {
+			this.budget?.spend(instructions);
+		}
 	}
 
 	protected beginFrame(): boolean {

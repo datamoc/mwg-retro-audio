@@ -2,7 +2,7 @@ import { SincResampler } from '../driver/Resampler.ts';
 import type { Chip } from '../chips/Chip.ts';
 import type { PlayerInfo, RetroPlayer } from '../players/Player.ts';
 import { Region } from '../region.ts';
-import type { LoadOptions } from './mwa.ts';
+import type { InstructionSpender, LoadOptions } from './mwa.ts';
 
 /**
  * SNES music: `.spc` files (a snapshot of the 64 KiB RAM, the 128 DSP registers and the SPC700 registers) played by
@@ -1080,10 +1080,14 @@ export class SnesApu {
 		}
 	}
 
+	/** instructions run since the player last charged them to its budget */
+	instructions = 0;
+
 	/** run the CPU until one DSP sample (32 CPU cycles) has elapsed, then compute it: returns [left, right] in -32768..32767 */
 	nextSample(): [number, number] {
 		while (this.sampleCycles < 32) {
 			const c = this.step();
+			this.instructions++;
 			this.sampleCycles += c;
 			this.tickTimers(c);
 		}
@@ -1321,9 +1325,11 @@ export class SpcPlayer implements RetroPlayer {
 	private readonly resampler: SincResampler;
 	private pos = 0;
 	private readonly limit: number;
+	private readonly budget?: InstructionSpender;
 
 	constructor(file: Uint8Array, options: LoadOptions & { seconds?: number } = {}) {
 		this.file = file;
+		this.budget = options.budget;
 		this.sampleRate = options.sampleRate ?? 44100;
 		this.apu.load(file);
 		const text = (o: number, n: number): string =>
@@ -1347,6 +1353,8 @@ export class SpcPlayer implements RetroPlayer {
 		this.resampler = new SincResampler(32000, this.sampleRate, (l, r, n) => {
 			for (let i = 0; i < n; i++) {
 				[left, right] = this.apu.nextSample();
+				this.budget?.spend(this.apu.instructions);
+				this.apu.instructions = 0;
 				l[i] = left / 32768;
 				r[i] = right / 32768;
 			}

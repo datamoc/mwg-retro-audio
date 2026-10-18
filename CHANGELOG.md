@@ -25,9 +25,18 @@ Le paquet exige maintenant `@datamoc/mwg` ≥ 0.47.0 (pair facultatif) : les cœ
 - `renderPlayerAsync`, `writeSmf`, `parseSf2`, `soundFontInstruments`, `trimLeadingSilence`, `./mwg/catalogue`
   (importer un moteur par modèle, hors du chemin `./mwg` pour garder les imports ciblés légers).
 - Champ `funding` et `.github/FUNDING.yml`.
+- **Option `budget` de `LoadOptions`** (type `InstructionSpender`, un `spend(nombre)` qui lève une fois l'allocation
+  épuisée) : les lecteurs NSF, PSID et SPC y comptent les instructions qu'ils émulent, pour qu'un fichier hostile ou
+  cassé échoue par son nom au lieu de se rendre plus lentement que le temps réel. Le `InstructionBudget` de mwg a cette
+  forme (rien n'est importé de mwg) ; il lève alors une `DecodeBudgetError`. Sans budget, rien ne change.
 
 ### Corrections
 
+- **Plafond de sortie des lecteurs d'archives** : `inflateRaw`, `gunzip`, `unzlib` et `unlha` s'arrêtent à
+  `DEFAULT_MAX_OUTPUT` (64 Mio, comme `decoderLimits` de mwg) et lèvent une erreur au-delà. La taille qu'annonce le
+  fichier (le pied d'un gzip, l'en-tête d'un LHA) n'est plus une raison d'allouer : un gzip qui annonce 4 Gio ou une
+  bombe DEFLATE de moins de 20 Ko pour 8 Mio ne dépasse plus le plafond. Le plafond se règle par appel direct
+  (`inflateRaw(données, début, taille, plafond)`, `unlha(données, plafond)`), pas depuis `loadFile`.
 - **`reset()` ramène désormais un moteur à l'état d'un moteur neuf** : le D-50 (et le MT-32 et le LAPC-I, qui en
   contiennent neuf) oubliait la phase du chorus et l'âge des voix, le VL-1 la phase et le temps de la voix.
 - **Konami VRC6** : le canal à impulsions restait en mode « volume constant » (aucun son), la période était plafonnée à
@@ -41,6 +50,8 @@ Le paquet exige maintenant `@datamoc/mwg` ≥ 0.47.0 (pair facultatif) : les cœ
 
 - `tests/instrument-audit.test.ts` : chacun des 48 modèles sonne sur trois hauteurs, sans NaN ni écrêtage, et les
   moteurs réparés jouent la bonne note.
+- `tests/instruction-budget.test.ts` et `tests/decoder-limits.test.ts` : un NSF, un PSID et un SPC qui ne rendent jamais
+  la main sont arrêtés par le budget ; une bombe DEFLATE, un gzip et un LHA qui annoncent des gigaoctets sont refusés.
 - `tests/worker-cores.test.ts` : un texte par moteur, sans `import`, `eval`, WebAssembly ni DOM, sortie identique au
   moteur direct, `reset()` identique à un moteur neuf.
 
