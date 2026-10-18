@@ -1,4 +1,4 @@
-import type { Playable } from '@datamoc/mw_games/audio';
+import type { Playable } from '@datamoc/mwg/audio';
 import { RetroStream, type RetroStreamOptions } from '../driver/RetroStream.ts';
 import { skipFrames } from '../driver/Renderer.ts';
 import { loadFile, type LoadFileOptions } from '../formats/load.ts';

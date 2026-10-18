@@ -1,4 +1,4 @@
-import type { BlockSource, LoopRegion } from '@datamoc/mw_games/audio';
+import type { BlockSource, LoopRegion } from '@datamoc/mwg/audio';
 import { skipFrames } from '../driver/Renderer.ts';
 import type { RetroPlayer } from '../players/Player.ts';
 
@@ -25,7 +25,7 @@ export interface RetroBlockSourceOptions {
  *
  * @example
  * ```ts
- * import { StreamPlayable } from '@datamoc/mw_games/audio';
+ * import { StreamPlayable } from '@datamoc/mwg/audio';
  * import { retroBlockSource, retroLoopRegion } from '@datamoc/mwg-retro-audio/mwg';
  *
  * const player = loadFile(bytes, { sampleRate: context.sampleRate, name: 'title.nsf' });

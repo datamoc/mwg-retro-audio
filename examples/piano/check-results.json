@@ -18,7 +18,7 @@
 		{
 			"id": "tandy",
 			"name": "Tandy SN76489 — Tandy 1000, IBM PCjr",
-			"peak": 0.1191,
+			"peak": 0.1271,
 			"controls": 7
 		},
 		{
@@ -84,7 +84,7 @@
 		{
 			"id": "nes-apu",
 			"name": "NES APU NTSC — Nintendo NES / Famicom (NTSC)",
-			"peak": 0.0946,
+			"peak": 0.0752,
 			"controls": 8
 		},
 		{
@@ -114,7 +114,7 @@
 		{
 			"id": "namco163",
 			"name": "Namco 163 — Famicom (cartouche Namco)",
-			"peak": 0.1416,
+			"peak": 0.1,
 			"controls": 8
 		},
 		{
@@ -138,7 +138,7 @@
 		{
 			"id": "opl2",
 			"name": "OPL2 — PC (AdLib)",
-			"peak": 0.1165,
+			"peak": 0.1191,
 			"controls": 6
 		},
 		{
@@ -150,7 +150,7 @@
 		{
 			"id": "sound-blaster",
 			"name": "Sound Blaster (OPL2) — PC (Sound Blaster 1.x / 2.0)",
-			"peak": 0.1165,
+			"peak": 0.1191,
 			"controls": 6
 		},
 		{
@@ -210,25 +210,25 @@
 		{
 			"id": "dartmouth",
 			"name": "Dartmouth Digital Synthesizer",
-			"peak": 0.1796,
+			"peak": 0.1789,
 			"controls": 5
 		},
 		{
 			"id": "synclavier",
 			"name": "Synclavier",
-			"peak": 0.0911,
+			"peak": 0.091,
 			"controls": 6
 		},
 		{
 			"id": "la-synth",
 			"name": "Structure LA",
-			"peak": 0.056,
+			"peak": 0.0553,
 			"controls": 5
 		},
 		{
 			"id": "ai-synth",
 			"name": "Structure AI",
-			"peak": 0.0544,
+			"peak": 0.0542,
 			"controls": 5
 		},
 		{
@@ -240,13 +240,13 @@
 		{
 			"id": "simple:Piano",
 			"name": "Piano",
-			"peak": 0.0212,
+			"peak": 0.0206,
 			"controls": 1
 		},
 		{
 			"id": "simple:Electric piano",
 			"name": "Electric piano",
-			"peak": 0.0105,
+			"peak": 0.0106,
 			"controls": 1
 		},
 		{

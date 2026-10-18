@@ -2,7 +2,7 @@
  * @datamoc/mwg-retro-audio: pure TypeScript retro multi-chip audio engine on the native Web Audio API.
  *
  * Three layers (see the specification): players that turn files into register writes (`formats`, `players`), chip
- * emulators (`chips`) and the Web Audio output (`driver`). Sound effects: `sfx`. Adapters for @datamoc/mw_games are
+ * emulators (`chips`) and the Web Audio output (`driver`). Sound effects: `sfx`. Adapters for @datamoc/mwg are
  * in the `./mwg` entry. Everything runs in a browser: no ROM, no native program.
  */
 export * from './region.ts';

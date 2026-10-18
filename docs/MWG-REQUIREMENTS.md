@@ -9,6 +9,11 @@ déterministe), paramètres joueur (`AudioSettings` : région, étage de sortie,
 `.mwp` avec politique de capacités (`requires.retroAudio`, refus des ROM), outil `mwg-audio`, Web MIDI en direct
 (`connectWebMidi`), banques `.syx` DX7 nommées et échantillonnées (`SyxBank`), doubles de test
 (`FakeRetroPlayer`, `FakeAudioContext`, `FakeBlockSource`) et protocole d'écoute (`docs/listening-protocol.md`).
+Deux versions ont suivi : **0.45.0 a renommé le paquet en `@datamoc/mwg`** (`@datamoc/mw_games` devient
+un paquet de renvoi ; les imports et le pair ici suivent le nouveau nom) et **0.46.0 lit et écrit les
+SoundFont 3** (échantillons Vorbis, Opus ou FLAC — `loadSoundFont`, `webAudioSampleDecoder`, outil
+`mwg-soundfonts convert`) : les banques SF3 s'ouvrent donc côté mwg, ce paquet restant SoundFont 2 par
+conception.
 Ce document reste donc la référence de cadrage ; les sections encore ouvertes sont signalées ci-dessous.
 
 Côté paquet, les adaptateurs qui consomment ces contrats vivent dans `src/mwg/` (sous-chemin `@datamoc/mwg-retro-audio/mwg`) :
@@ -22,7 +27,7 @@ Côté paquet, les adaptateurs qui consomment ces contrats vivent dans `src/mwg/
 | 1.8 étage de sortie et réglages | `AudioSettings` (`region`, `outputStage`, `soften`, `dynamics`) | `retroLoadFor`, `retroOutputFor`, `retroSfxEngineOptionsFor` |
 | 7. doubles de test | `FakeRetroPlayer`, `FakeAudioContext`, `FakeBlockSource` | `tests/mwg.test.ts` joue l'interopérabilité réelle contre ces doubles |
 
-Les constats sur mwg venaient de la lecture de `MW_games/src/audio` à l'écriture (API d'alors : `Playable`,
+Les constats sur mwg venaient de la lecture de `mwg/src/audio` à l'écriture (API d'alors : `Playable`,
 `Sound`, `Music`, `Orchestrator`, `Channel` / `AudioBus` avec `BusLoader`, `renderMidiToBuffer` avec `SoundFont`,
 `AudioListener` / `SoundSource`, `onCaption`). Ceux sur le paquet viennent de son code et de `CONFORMANCE.md`.
 
@@ -293,7 +298,7 @@ Dans l'esprit de `mwg-smoke`, `mwg-size`, `mwg-i18n`, `mwg-bench` :
 - `API_REPORT.md` / `api-surface.json` : les nouveaux contrats (`MidiSynth`, `AudioCoreHost`, type de son d'effet) doivent y figurer.
 - `examples/` : un exemple `retro-audio` (musique, effet, moteur MIDI interchangeable) avec contrôle de fumée navigateur.
 - `ROADMAP.md` : un item par ligne de la section 9, numéroté à la suite de `CLOSED.md` ; `CHANGELOG.md` à chaque livraison.
-- Version minimale du pair : le paquet déclare `@datamoc/mw_games >=0.42.0`.
+- Version minimale du pair : le paquet déclare `@datamoc/mwg >=0.45.0` (le nom actuel depuis la version 0.45.0).
 
 ## 9. Ordre proposé
 

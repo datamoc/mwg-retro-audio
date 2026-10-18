@@ -1,4 +1,4 @@
-import type { BusKind, BusLoader, LoadedTrack } from '@datamoc/mw_games/audio';
+import type { BusKind, BusLoader, LoadedTrack } from '@datamoc/mwg/audio';
 import { renderPlayer, toAudioBuffer, type BufferFactory } from '../driver/Renderer.ts';
 import type { OutputStageOptions } from '../driver/OutputStage.ts';
 import { loadFile, type LoadFileOptions } from '../formats/load.ts';

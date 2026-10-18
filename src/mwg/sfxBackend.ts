@@ -1,4 +1,4 @@
-import type { SfxBackend, SfxDefinition as MwgSfxDefinition, SfxVoice as MwgSfxVoice } from '@datamoc/mw_games/audio';
+import type { SfxBackend, SfxDefinition as MwgSfxDefinition, SfxVoice as MwgSfxVoice } from '@datamoc/mwg/audio';
 import type { SfxEngine } from '../sfx/engine.ts';
 import type { SfxDefinition } from '../sfx/types.ts';
 
@@ -40,7 +40,7 @@ export interface RetroSfxBackendOptions {
  *
  * @example
  * ```ts
- * import { SfxBank } from '@datamoc/mw_games/audio';
+ * import { SfxBank } from '@datamoc/mwg/audio';
  * import { retroSfxBackend, toMwgSfxDefinition } from '@datamoc/mwg-retro-audio/mwg';
  *
  * const bank = new SfxBank([toMwgSfxDefinition(laser)]);

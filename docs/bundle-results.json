@@ -149,8 +149,8 @@
       ]
     },
     "soundFontParser": {
-      "bytes": 7044,
-      "gzipBytes": 2872,
+      "bytes": 7131,
+      "gzipBytes": 2930,
       "modules": [
         "dist/formats/soundfont.js",
         "soundFontParser.ts"

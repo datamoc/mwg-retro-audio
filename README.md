@@ -13,7 +13,7 @@ Le [piano interactif](examples/piano/README.md) joue tous les modèles du catalo
 profils simples, PSG, puces à registres et synthétiseurs historiques — à la souris,
 au clavier de l'ordinateur ou avec un clavier MIDI via Web MIDI.
 
-Module audio rétro de la famille **mwg** (`@datamoc/mw_games`), à double vocation :
+Module audio rétro de la famille **mwg** (`@datamoc/mwg`), à double vocation :
 
 1. **Synthetiseurs et puces historiques pour les jeux mwg** - `src/chips/` : YM2149/AY, SID, NES APU et ses expansions, SN76489/Tandy, YM2612, YM2151, OPN, OPL2/OPL3, SAA1099, PC speaker, cartes C/MS et Sound Blaster, Apple II/Mockingboard, Yamaha DX7 et synthés historiques modélisés (`src/chips/historical.ts`), backend YM2149 bit-exact d'Hatari en GPL séparé (`vendor/hatari-ym/`).
 2. **Lecteur universel de musiques électroniques pré-MP3** — `loadFile()` (`src/formats/`, `src/players/`) : YM, VGM/VGZ, NSF/NSFE, PSID/RSID, SPC, MIDI/XMI, MOD/XM/S3M/IT, DRO, IMF, CMF, HSC, RAD, ROL, D00, SCI, WAV, VOC et le format universel MWA. Voir [`docs/ORGANISATION.md`](docs/ORGANISATION.md) pour la carte complète.
@@ -73,7 +73,7 @@ Every register driven format converts to **MWA**, a compact DEFLATE-compressed l
 chips and their clocks inside; decoding needs nothing but this package (`docs/MWA.md`).
 `convertToMwa(bytes)` does it for YM, VGM, NSF and PSID tunes; DRO, IMF and CMF compile to the same data.
 
-## With mwg (`@datamoc/mw_games`)
+## With mwg (`@datamoc/mwg`)
 
 `@datamoc/mwg-retro-audio/mwg`: `retroPlayableFactory` (a `Playable` for `Music`'s crossfades), `retroBusLoader` and
 `renderTrack` (a `LoadedTrack` with the loop region for `Channel` / `AudioBus`). Against mwg 0.44's retro-audio

@@ -1,4 +1,4 @@
-import type { MidiSynth, MidiSynthFactory } from '@datamoc/mw_games/audio';
+import type { MidiSynth, MidiSynthFactory } from '@datamoc/mwg/audio';
 import { D50Synth, D50_PRESETS } from '../chips/historical.ts';
 import { Mt32Synth } from '../chips/Mt32Synth.ts';
 import { Dx7Synth } from '../chips/Dx7.ts';
@@ -159,7 +159,7 @@ export const retroMidiEngines: Readonly<Record<string, MidiSynthFactory>> = Obje
  * Registers every retro engine with mwg's MIDI engine registry, so content can ask
  * `synth: "retro:mt32"` and `resolveMidiSynth` can voice files through it. Dependency
  * injected like the Hatari backend — `registerRetroMidiEngines(registerMidiSynth)` from
- * `@datamoc/mw_games/audio` — so this package never imports mwg at runtime. Returns the names.
+ * `@datamoc/mwg/audio` — so this package never imports mwg at runtime. Returns the names.
  */
 export function registerRetroMidiEngines(register: (name: string, factory: MidiSynthFactory) => void): string[] {
 	for (const [name, factory] of Object.entries(retroMidiEngines)) register(name, factory);

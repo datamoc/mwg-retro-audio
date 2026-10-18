@@ -9,7 +9,7 @@ import {
 	resolveMidiSynth,
 	unregisterMidiSynth,
 	type MidiSynthFallback,
-} from '@datamoc/mw_games/audio';
+} from '@datamoc/mwg/audio';
 import {
 	registerRetroCatalogueMidiEngines,
 	retroCatalogueMidiEngines,

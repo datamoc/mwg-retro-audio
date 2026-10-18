@@ -273,7 +273,10 @@ test('a note of many zones thins out the oldest notes beyond the voice limit and
 test('SF3, other versions, 24 bit only and garbage are refused with a clear error', () => {
 	assert.throws(
 		() => parseSf2(buildSf2({ samples: [loopedSine], instruments: [], presets: [], version: [3, 0] })),
-		(error: Error) => error instanceof SoundFontError && /SF3|Vorbis/.test(error.message),
+		(error: Error) =>
+			error instanceof SoundFontError &&
+			/SF3|Vorbis/.test(error.message) &&
+			error.message.includes('@datamoc/mwg'),
 	);
 	assert.throws(
 		() => parseSf2(buildSf2({ samples: [loopedSine], instruments: [], presets: [], version: [1, 0] })),
@@ -282,6 +285,27 @@ test('SF3, other versions, 24 bit only and garbage are refused with a clear erro
 	assert.throws(() => parseSf2(new Uint8Array(100)), SoundFontError);
 	assert.throws(() => parseSf2(new Uint8Array([1, 2, 3])), SoundFontError);
 	assert(!isSoundFont(new Uint8Array(100)));
+});
+
+test('chunk sizes are read unsigned: an INFO size past the end of the file is an error, never a backwards walk', () => {
+	// the bug mwg 0.46 fixed on its own reader: a size read as a negative number walks the chunks backwards forever
+	for (const size of [0x8000_0000, 0xffff_ffff]) {
+		const file = Uint8Array.from(bank());
+		new DataView(file.buffer, file.byteOffset, file.byteLength).setUint32(16, size, true);
+		assert.throws(() => parseSf2(file), SoundFontError, `size 0x${size.toString(16)}`);
+	}
+	const riff = Uint8Array.from(bank());
+	new DataView(riff.buffer, riff.byteOffset, riff.byteLength).setUint32(4, 0xffff_ffff, true);
+	assert(parseSf2(riff).presets.length > 0, 'a lying RIFF size stays bounded by the data');
+});
+
+test('sizes are read unsigned: a chunk size past the end of the file is an error, never a backwards walk', () => {
+	// the bug mwg 0.46 fixed on its side: a size read as a negative number walked the chunk list forever
+	for (const size of [0x8000_0000, 0xffff_ffff]) {
+		const file = Uint8Array.from(bank());
+		new DataView(file.buffer, file.byteOffset, file.byteLength).setUint32(16, size, true);
+		assert.throws(() => parseSf2(file), SoundFontError, `size 0x${size.toString(16)}`);
+	}
 });
 
 test('a damaged bank is an error or still plays, never an endless loop or a read outside the data', () => {

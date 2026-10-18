@@ -192,7 +192,9 @@ Validé par `tools/piano-check.mjs` avec le MIDI simulé.
   préréglage, hors catalogue statique ; moteurs MIDI par `instrumentMidiEngines`), et dans
   la démo une section « Banques SoundFont » : dossier de banques (`showDirectoryPicker`) ou
   fichiers `.sf2`, les préréglages rejoignent la liste des modèles. Le **SF3 est refusé**
-  avec un message clair : le décodeur Vorbis reste à livrer. Sous-ensemble de la norme
+  avec un message clair qui renvoie à mwg : `@datamoc/mwg` 0.46 lit et décode les banques SF3
+  (Vorbis, Opus, FLAC — `loadSoundFont`, outil `mwg-soundfonts convert`), ce paquet restant
+  SoundFont 2 par conception. Sous-ensemble de la norme
   dans `CONFORMANCE.md`. Tests : banques synthétiques (`tests/soundfont.test.ts`), mesures
   de bundles (`soundFontParser` 7 Ko, `soundFontInstruments` 8 Ko ; le reste inchangé),
   `piano-check` avec un sélecteur de dossier **simulé** ; aucune banque réelle essayée.

@@ -116,7 +116,9 @@ La section « Banques SoundFont » ouvre vos propres fichiers `.sf2` (bouton « 
 banques… » sous Chrome et Edge, sinon « Votre fichier .sf2 ») ; chaque préréglage de la
 banque devient un modèle jouable, au bas de la liste, avec un panneau (gain, panoramique,
 temps d'attaque et de relâchement, filtre, boucles). Aucune banque n'est livrée avec la page.
-Le SF3 (Ogg Vorbis) est refusé avec un message ; sous-ensemble de la norme lu et joué : voir
+Le SF3 (Vorbis, Opus ou FLAC) est refusé avec un message qui renvoie à mwg : `@datamoc/mwg`
+0.46 lit et décode les banques SF3 (`loadSoundFont`, outil `mwg-soundfonts convert`), cette
+démo autonome restant SoundFont 2 ; sous-ensemble de la norme lu et joué : voir
 `CONFORMANCE.md`. Validé avec des banques fabriquées par `tests/sf2file.ts`, jamais avec une
 banque réelle.
 

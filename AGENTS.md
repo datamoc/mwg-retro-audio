@@ -7,7 +7,7 @@ This package provides historical sound-chip emulation and music playback in pure
 - `src/chips/`: synthesizers, chip emulation, and hardware profiles.
 - `src/formats/` and `src/players/`: file parsers and playback engines.
 - `src/driver/`: Web Audio output and offline rendering; `src/sfx/`: sound effects.
-- `src/mwg/`: optional integration with `@datamoc/mw_games`.
+- `src/mwg/`: optional integration with `@datamoc/mwg`.
 - `tests/`: automated tests, helpers, and `fixtures/` reference data.
 - `docs/`: architecture and format specifications; start with `docs/ORGANISATION.md`.
 - `tools/`: listening and ROM-analysis utilities. `vendor/hatari-ym/` is a separately licensed package. `dist/` contains build output.
@@ -16,7 +16,7 @@ This package provides historical sound-chip emulation and music playback in pure
 
 Use Node.js 20.19 or newer. Run commands from the package root:
 
-- `npm install`: install dependencies; the development dependency on `@datamoc/mw_games` expects a sibling `../mwg` checkout.
+- `npm install`: install dependencies; the development dependency on `@datamoc/mwg` expects a sibling `../mwg` checkout.
 - `npm run check`: type-check source and tests without emitting files.
 - `npm test`: run all tests using Node’s test runner through `tsx`.
 - `npm run build`: emit ES modules and TypeScript declarations into `dist/`.

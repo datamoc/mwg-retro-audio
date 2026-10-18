@@ -12,8 +12,8 @@ import {
 	unregisterMidiSynth,
 	type AudioSettingsData,
 	type MidiSynthFallback,
-} from '@datamoc/mw_games/audio';
-import { FakeAudioContext } from '@datamoc/mw_games/testing';
+} from '@datamoc/mwg/audio';
+import { FakeAudioContext } from '@datamoc/mwg/testing';
 import {
 	renderTrack,
 	retroBlockSource,

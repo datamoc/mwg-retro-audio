@@ -1,4 +1,4 @@
-import type { AudioSettingsData } from '@datamoc/mw_games/audio';
+import type { AudioSettingsData } from '@datamoc/mwg/audio';
 import type { OutputStageOptions } from '../driver/OutputStage.ts';
 import type { PsidOptions } from '../formats/psid.ts';
 import { Region } from '../region.ts';
@@ -28,7 +28,7 @@ export function retroSfxEngineOptionsFor(settings: AudioSettingsData, sampleRate
  * the engine's `OutputStageOptions` for the settings: `faithful` keeps what the hardware
  * did (DC offset and top end included), `clean` removes the DC and asks the mwg soften
  * curve for a cutoff — 18 kHz at `soften` 0 (open), 3.5 kHz at 1, never past half the
- * sample rate. The formula mirrors `softenCutoff` of `@datamoc/mw_games/audio` on purpose
+ * sample rate. The formula mirrors `softenCutoff` of `@datamoc/mwg/audio` on purpose
  * (this layer stays type-only against mwg); `tests/mwg.test.ts` pins the two together.
  * The `dynamics` dial is per-sample soft limiting: it belongs to the bus, past the engine,
  * where mwg's `dynamicsLimit` already applies it.

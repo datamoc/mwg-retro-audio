@@ -1,4 +1,4 @@
-import type { MidiSynth, MidiSynthFactory } from '@datamoc/mw_games/audio';
+import type { MidiSynth, MidiSynthFactory } from '@datamoc/mwg/audio';
 import { InstrumentMidiSink } from '../instruments/InstrumentMidiSink.ts';
 import type { Instrument, InstrumentDef } from '../instruments/Instrument.ts';
 

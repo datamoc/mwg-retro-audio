@@ -1,4 +1,4 @@
-import type { MidiSynthFactory } from '@datamoc/mw_games/audio';
+import type { MidiSynthFactory } from '@datamoc/mwg/audio';
 import { instrumentCatalogue } from '../instruments/catalogue.ts';
 import { instrumentMidiEngines } from './instrumentEngines.ts';
 import { retroMidiEngines } from './midiEngines.ts';

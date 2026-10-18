@@ -16,7 +16,9 @@
  * synthesizer (velocity to attenuation, and the channel volume, pan and pitch bend of the instrument controls); the
  * modulation envelope, the LFOs, the effects sends, key number to envelope timings and exclusive classes are ignored.
  *
- * What is refused: SF3 (samples compressed with Ogg Vorbis, which this package cannot decode yet) and SF2 files whose
+ * What is refused: SF3 (samples compressed as Ogg Vorbis, Opus or FLAC, which this package does not decode —
+ * @datamoc/mwg 0.46 reads and decodes them with `loadSoundFont`, or converts them with `mwg-soundfonts convert`)
+ * and SF2 files whose
  * samples are 24 bit only; both throw a `SoundFontError` that says so. Every offset and size read from the file is
  * checked against the file: a damaged bank is an error, never an endless loop or a read outside the data.
  */
@@ -219,6 +221,7 @@ export function parseSf2(file: Uint8Array): SoundFont {
 	const view = new DataView(file.buffer, file.byteOffset, file.byteLength);
 	if (ascii(view, 0, 4) !== 'RIFF' || ascii(view, 8, 4) !== 'sfbk') throw new SoundFontError('not a SoundFont file');
 	const riffSize = view.getUint32(4, true);
+	// an end past the data is not an error: the walk stays inside the file
 	const end = Math.min(file.length, 8 + riffSize);
 	const top = readChunks(view, 12, end);
 	const find = (type: string): Chunk => {
@@ -236,7 +239,7 @@ export function parseSf2(file: Uint8Array): SoundFont {
 	const minor = view.getUint16(ifil.start + 2, true);
 	if (major >= 3)
 		throw new SoundFontError(
-			`SoundFont ${major}.${minor} (SF3) keeps its samples as Ogg Vorbis, which this package cannot decode yet: open an SF2 file`,
+			`SoundFont ${major}.${minor} (SF3) keeps its samples as Ogg Vorbis, Opus or FLAC, which this package does not decode: open an SF2 file, or read it with @datamoc/mwg 0.46 (loadSoundFont, mwg-soundfonts convert)`,
 		);
 	if (major !== 2) throw new SoundFontError(`unsupported SoundFont version ${major}.${minor}`);
 	const nameChunk = info.find((chunk) => chunk.id === 'INAM');
