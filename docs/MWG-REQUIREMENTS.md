@@ -180,6 +180,53 @@ Limites connues du module : FLAC sans étage LPC (les prédicteurs fixes suffise
 cent de plus qu'un encodeur complet) ; stéréo uniquement ; Opus en stéréo à débit constant ; pas de découpage par
 chapitres.
 
+### 1.10 Liens de partage : enveloppe publique, contenu libre (P1)
+
+Un lien court qui porte un état de jeu ou une musique, à envoyer dans un message ou à publier. L'**enveloppe est
+publique et stable** (n'importe qui peut en fabriquer ou en lire une) ; le **contenu est libre**, défini par chaque
+jeu. La démo du piano en est un premier exemple (modèle, réglages, morceau, dichotomie sur les notes).
+
+Enveloppe :
+
+- placée dans le **fragment** de l'URL (`#`) : il n'est jamais envoyé à un serveur, donc les limites de ligne de
+  requête des serveurs ne s'appliquent pas ; il ne reste que celles des navigateurs et des messageries ;
+- champs : version de l'enveloppe, type de contenu, identifiant du jeu ou du paquet (`id@version`), charge utile,
+  somme de contrôle de 2 à 4 octets (détecte un lien coupé par une messagerie) ; le tout compressé en deflate puis
+  encodé en base64url ;
+- **taille maximale configurable** : 2 000 caractères par défaut (sûr pour une messagerie), jusqu'à 4 093 quand on sait
+  que le lien restera dans un navigateur ; au-delà, le lien est tronqué selon les règles du contenu (jamais par
+  coupure d'octets) et signalé comme tel ;
+- **sécurité** : la charge est une donnée non fiable. Décompression avec budget (`inflateBounded`), validation contre
+  le schéma du jeu, aucune exécution ; un lien trop gros, coupé ou invalide échoue proprement sans affecter le jeu ;
+- application **après confirmation du joueur** (jamais directement dans une sauvegarde) ; un lien d'une autre version
+  du paquet est refusé ou adapté, selon ce que le jeu déclare.
+
+Contenu d'un état de jeu (libre, par jeu) : une graine seule, ou une graine et l'équipement d'un personnage
+(identifiant, objets, niveaux, version du contenu). La troncature se fait **par priorité de champ** : la graine
+d'abord, l'équipement ensuite, les éléments décoratifs en dernier ; on retire les champs les moins prioritaires
+jusqu'à ce que le lien tienne, et le destinataire en est informé.
+
+Critères d'acceptation : un lien produit puis rouvert redonne exactement le même état ; un lien tronqué à
+n'importe quel octet est refusé par la somme de contrôle ; un lien hostile (bombe de décompression, schéma faux)
+ne dépasse pas le budget et ne casse pas le jeu ; la limite choisie n'est jamais dépassée.
+
+### 1.11 Liens de musique de jeu (P1)
+
+Même enveloppe que 1.10, avec un contenu de type musique.
+
+- **Musique générée** : la graine, l'ambiance, la tonalité, la durée, le moteur (`retro:mt32`, `ym2612`…) et ses
+  réglages. Une graine suffit pour une musique générée : le lien reste très court.
+- **Musique importée** : les notes du MIDI sont embarquées ; si le lien dépasse la limite, une recherche
+  dichotomique garde le plus grand nombre de notes qui tient, et le titre porte « … ».
+- **Banques SoundFont** : non transportables (le fichier appartient à l'utilisateur). Le lien le dit et propose un
+  modèle du catalogue.
+- **Lecture** : une demande de confirmation précède le son, ce qui fournit aussi le geste que les navigateurs
+  exigent pour démarrer l'audio.
+
+Critères d'acceptation : le même lien donne la même musique note pour note (graine déterministe, 1.7) ; un morceau
+tronqué reste jouable et indique qu'il l'est ; un lien qui désigne un moteur absent retombe sur le repli de 1.1 avec
+un événement de diagnostic.
+
 ## 2. Contenu et paquets (MWL)
 
 La proposition détaillée est dans [`MWL-PROPOSAL.md`](MWL-PROPOSAL.md) : `package`, `asset`, `character`, `animation`,
