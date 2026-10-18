@@ -2,13 +2,21 @@
 
 Depuis la racine : `npm install`, puis `npm start --prefix examples/piano`.
 Ouvrir http://127.0.0.1:4173 et activer le son (le navigateur exige un geste
-utilisateur pour démarrer l’audio). Le serveur local s’arrête avec `Ctrl+C`.
+utilisateur pour démarrer l'audio). Le serveur local s'arrête avec `Ctrl+C`.
+
+La page s'ouvre en mode **Simple** : huit boutons de modèles tirés au hasard du
+catalogue, un 🎲 pour relancer le tirage, et le clavier sous la main — le son
+démarre au premier appui. Le bouton **Complexe** rouvre toute l'interface
+(machines, préréglages, banques SoundFont, lecture automatique, enregistrement,
+export, réglages) ; le choix du mode est retenu d'une visite à l'autre.
 
 Jouer avec la souris ou les touches A W S E D F T G Y H U J K. Z et X changent
 l’octave ; le champ Octave permet aussi de la choisir. Le choix de modèle
 reconstruit le panneau de paramètres, avec unités, plages, valeurs par défaut,
 défauts et limites de polyphonie affichés. Les notes actives sont mises en
-évidence sur le clavier graphique ; « Couper les notes » arrête tout. Le volume
+évidence sur le clavier graphique ; « ⚠️ Coupure d'urgence » arrête toutes les
+notes et met le volume à zéro — le bouton devient alors « 🔊 Réactiver le son »
+et ramène le volume d'avant. Le volume
 général est indépendant du volume propre au modèle. La touche « Réglages par
 défaut » remet les paramètres du modèle choisi.
 
@@ -42,8 +50,11 @@ et les écouteurs.
 (playwright-core, dépendance du projet voisin `../mwg`) : chaque modèle construit
 son panneau, produit un signal non nul au clavier d’ordinateur, à la souris et en
 MIDI simulé, les accords tiennent selon la polyphonie, le changement de modèle en
-cours de note, la coupure d’urgence, la perte de focus, la restauration des
-réglages, la déconnexion MIDI, le refus et l’absence de Web MIDI et la libération
+cours de note, la coupure d'urgence (volume à zéro puis réactivation par le même
+bouton), la perte de focus, la restauration des réglages, les deux modes de la
+page (huit boutons tirés au hasard, choix retenu), l'export en fil séparé (les
+notes et l'horloge du morceau restent vivants pendant le rendu), la déconnexion
+MIDI, le refus et l'absence de Web MIDI et la libération
 du contexte à la fermeture sont vérifiés. Résultat détaillé :
 `check-results.json` dans ce dossier.
 
@@ -103,8 +114,11 @@ physique n'a encore été essayé.
 - Le panneau « Export audio du morceau courant » est séparé de l'enregistrement : il
   rend hors ligne le morceau sélectionné dans la liste (morceau livré, fichier, dossier
   ou dernière prise), avec la voix choisie, et le télécharge en FLAC, Opus ou WAV, avec une
-  barre de progression (`renderPlayerAsync`, qui rend la main au navigateur). Opus demande
-  WebCodecs (Chrome, Edge) : l'option est grisée ailleurs.
+  barre de progression. Le rendu et l'encodage tournent dans un Web Worker séparé
+  (`export.worker.ts`, dont le texte est embarqué dans la page par `tools/worker-plugin.mjs`) :
+  la musique en cours continue de jouer pendant l'export ; si le worker est indisponible ou
+  échoue, la page rend elle-même avec `renderPlayerAsync`, qui rend la main au navigateur.
+  Opus demande WebCodecs (Chrome, Edge) : l'option est grisée ailleurs.
 - « Dossier de MIDI… » (Chrome et Edge, `showDirectoryPicker`) liste les `.mid`, `.midi`
   et `.xmi` d'un dossier de l'ordinateur ou d'un disque monté ; ailleurs, « Votre
   fichier .mid » accepte plusieurs fichiers. Essayé seulement avec une fausse API de
@@ -116,7 +130,9 @@ La section « Banques SoundFont » ouvre vos propres fichiers `.sf2` (bouton « 
 banques… » sous Chrome et Edge, sinon « Votre fichier .sf2 ») ; chaque préréglage de la
 banque devient un modèle jouable, au bas de la liste, avec un panneau (gain, panoramique,
 temps d'attaque et de relâchement, filtre, boucles). Aucune banque n'est livrée avec la page.
-Le SF3 (Vorbis, Opus ou FLAC) est refusé avec un message qui renvoie à mwg : `@datamoc/mwg`
+Le SF3 est refusé — la norme parle de « son compressé » : Ogg Vorbis dans la
+pratique, mais FLAC et Opus sont des banques SF3 tout aussi conformes — avec un message qui
+renvoie à mwg : `@datamoc/mwg`
 0.46 lit et décode les banques SF3 (`loadSoundFont`, outil `mwg-soundfonts convert`), cette
 démo autonome restant SoundFont 2 ; sous-ensemble de la norme lu et joué : voir
 `CONFORMANCE.md`. Validé avec des banques fabriquées par `tests/sf2file.ts`, jamais avec une
@@ -125,6 +141,6 @@ banque réelle.
 ## Page autonome
 
 `npm run build:demo` génère `examples/piano/synth-demo.html` : un seul fichier
-(JS inliné, environ 150 Ko) qui s'ouvre directement par double-clic, sans serveur
+(JS et worker inlinés, environ 740 Ko) qui s'ouvre directement par double-clic, sans serveur
 local ni `npm install`. Web MIDI y reste dépendant du navigateur et du contexte
 (souvent indisponible en `file://`) ; clavier et souris fonctionnent.

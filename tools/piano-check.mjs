@@ -17,6 +17,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { resolve, extname, join } from 'node:path';
 import assert from 'node:assert/strict';
+import { embeddedWorkers } from './worker-plugin.mjs';
 
 const require = createRequire(import.meta.url);
 let chromium;
@@ -38,6 +39,7 @@ await build({
 	loader: { '.mid': 'binary' },
 	format: 'esm',
 	sourcemap: true,
+	plugins: [embeddedWorkers()],
 	logLevel: 'warning',
 });
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.map': 'application/json' };
@@ -143,6 +145,8 @@ async function newPage(midiMode = 'ok', extra = null) {
 	return page;
 }
 async function enableSound(page) {
+	// la page s'ouvre en mode simple : les scénarios jouent dans le mode complet
+	await page.click('#tabComplex');
 	await page.click('#audio');
 	await page.waitForFunction(() => window.__contexts.at(-1)?.state === 'running');
 }
@@ -211,11 +215,20 @@ await page.keyboard.down('KeyA');
 await page.selectOption('#model', 'dx7');
 await page.keyboard.up('KeyA');
 if ((await activeCount(page)) !== 0) record('model-switch', 'keys stayed highlighted after switching models');
-// coupure d'urgence et perte de focus
+// coupure d'urgence : notes libérées et volume à zéro ; le même bouton ramène le son
 await page.keyboard.down('KeyA');
 await page.click('#panic');
 await page.keyboard.up('KeyA');
 if ((await activeCount(page)) !== 0) record('panic', 'panic button left active keys');
+const volumeAfterPanic = await page.evaluate(() => document.getElementById('volume').value);
+if (volumeAfterPanic !== '0') record('panic', `emergency cut left the volume at ${volumeAfterPanic}`);
+const againLabel = await page.evaluate(() => document.getElementById('panic').textContent);
+if (!/Réactiver/.test(againLabel ?? '')) record('panic', `the cut did not offer reactivation: ${againLabel}`);
+await page.click('#panic');
+const volumeRestored = await page.evaluate(() => document.getElementById('volume').value);
+if (volumeRestored !== '0.6') record('panic', `reactivation left the volume at ${volumeRestored}`);
+const backLabel = await page.evaluate(() => document.getElementById('panic').textContent);
+if (!/Coupure d.urgence/.test(backLabel ?? '')) record('panic', `label after reactivation: ${backLabel}`);
 await page.keyboard.down('KeyS');
 await page.evaluate(() => window.dispatchEvent(new Event('blur')));
 await page.keyboard.up('KeyS');
@@ -569,6 +582,7 @@ for (const [code, voices, title] of [
 	if (seen.untranslated || !seen.badge) record(`lang-${code}`, 'empty translated element or missing badge');
 }
 // dispositions : les étiquettes suivent la disposition, les touches physiques jouent toujours les mêmes notes
+await lang.click('#tabComplex');
 for (const [layout, labels, octave] of [
 	['azerty', 'Q Z S E D F T G Y H U J K', 'W / X'],
 	['qwertz', 'A W S E D F T G Z H U J K', 'Y / X'],
@@ -589,6 +603,100 @@ await lang.selectOption('#lang', 'de');
 await lang.reload();
 if ((await lang.evaluate(() => document.documentElement.lang)) !== 'de') record('lang', 'choice lost on reload');
 await lang.close();
+// les deux modes : la page s'ouvre en « Simple » avec huit boutons tirés au hasard ; la coupure d'urgence silence la page
+const simple = await newPage();
+const modes0 = await simple.evaluate(() => ({
+	simpleShown: !document.getElementById('panel-simple').hidden,
+	complexHidden: document.getElementById('panel-complex').hidden,
+	tab: document.getElementById('tabSimple').getAttribute('aria-selected'),
+	picks: document.querySelectorAll('#randomModels button[data-model]').length,
+	dice: document.querySelectorAll('#randomModels button:not([data-model])').length,
+	panic: document.getElementById('panic').textContent,
+}));
+if (!modes0.simpleShown || !modes0.complexHidden || modes0.tab !== 'true') record('modes', JSON.stringify(modes0));
+if (modes0.picks !== 8 || modes0.dice !== 1) record('modes', `random draw: ${modes0.picks} models + ${modes0.dice} dice`);
+if (!/Coupure d’urgence/.test(modes0.panic ?? '')) record('modes', `emergency button label: ${modes0.panic}`);
+await simple.click('#audio');
+await simple.waitForFunction(() => window.__contexts.at(-1)?.state === 'running');
+const chosen = await simple.evaluate(() => {
+	const buttons = document.querySelectorAll('#randomModels button[data-model]');
+	const button = buttons[buttons.length - 1];
+	button.click();
+	return button.dataset.model;
+});
+if ((await simple.evaluate(() => document.getElementById('model').value)) !== chosen)
+	record('modes', 'a random button did not choose its model');
+const highlighted = await simple.evaluate(
+	(id) => document.querySelector(`#randomModels button[data-model="${id}"]`)?.getAttribute('aria-pressed') === 'true',
+	chosen,
+);
+if (!highlighted) record('modes', 'the chosen random model is not highlighted');
+const simpleKeys = keyboard(simple);
+if ((await levelWhileHeld(simple, simpleKeys.press, simpleKeys.release, 500)) < 0.001)
+	record('modes', 'the simple mode keyboard made no sound');
+await simple.keyboard.down('KeyA');
+await simple.click('#panic');
+await simple.keyboard.up('KeyA');
+if ((await activeCount(simple)) !== 0) record('modes', 'the emergency cut left keys active');
+if ((await simple.evaluate(() => document.getElementById('volume').value)) !== '0')
+	record('modes', 'the emergency cut left the volume up');
+const cutStatus = await simple.evaluate(() => document.getElementById('status').value);
+if (!/zéro/.test(cutStatus)) record('modes', `status after the emergency cut: ${cutStatus}`);
+const reactivateLabel = await simple.evaluate(() => document.getElementById('panic').textContent);
+if (!/Réactiver/.test(reactivateLabel ?? '')) record('modes', `the cut did not offer reactivation: ${reactivateLabel}`);
+await simple.click('#panic');
+if ((await simple.evaluate(() => document.getElementById('volume').value)) !== '0.6')
+	record('modes', 'reactivation did not bring the volume back');
+if ((await levelWhileHeld(simple, simpleKeys.press, simpleKeys.release, 400)) < 0.001)
+	record('modes', 'no sound again after reactivation');
+await simple.click('#randomModels button:not([data-model])');
+if ((await simple.evaluate(() => document.querySelectorAll('#randomModels button[data-model]').length)) !== 8)
+	record('modes', 'the reroll did not draw eight models');
+await simple.click('#tabComplex');
+if (await simple.locator('#recorder').isHidden()) record('modes', 'the complex mode kept its panels hidden');
+await simple.reload();
+if (await simple.evaluate(() => document.getElementById('panel-complex').hidden))
+	record('modes', 'the mode choice did not survive the reload');
+await simple.close();
+// export dans un fil séparé : les notes restent jouables et l'horloge du morceau avance pendant le rendu
+const busy = await newPage();
+await enableSound(busy);
+const busySong = await busy.evaluate(() => {
+	const select = document.getElementById('song');
+	const option = Array.from(select.options).find((entry) => /Gymnop|Tha|Symphon/.test(entry.text));
+	if (option) {
+		select.value = option.value;
+		select.dispatchEvent(new Event('change'));
+	}
+	return option?.text ?? '';
+});
+if (!busySong) record('export-thread', 'no bundled song matched for the busy export');
+await busy.waitForTimeout(400);
+const busyDownload = busy.waitForEvent('download', { timeout: 180000 });
+await busy.click('#exportButton');
+await busy.waitForTimeout(400);
+const elapsedOf = () => busy.evaluate(() => Number(document.getElementById('progress').value));
+const elapsedBefore = await elapsedOf();
+await busy.keyboard.down('KeyA');
+const activeDuring = await activeCount(busy);
+const started = Date.now();
+let peakDuring = 0;
+while (Date.now() - started < 900) {
+	peakDuring = Math.max(peakDuring, await busy.evaluate(() => window.__pianoLevel()));
+	await busy.waitForTimeout(50);
+}
+await busy.keyboard.up('KeyA');
+const elapsedAfter = await elapsedOf();
+if (activeDuring < 1) record('export-thread', 'the keyboard was frozen during the export');
+if (peakDuring < 0.001) record('export-thread', `keys fell silent during the export (peak ${peakDuring})`);
+if (elapsedAfter <= elapsedBefore)
+	record('export-thread', `the song clock froze during the export (${elapsedBefore} -> ${elapsedAfter})`);
+const busyFile = await busyDownload;
+if (!/\.flac$/.test(busyFile.suggestedFilename())) record('export-thread', `download: ${busyFile.suggestedFilename()}`);
+const threadUsed = await busy.evaluate(() => window.__retroExportThread);
+if (threadUsed !== 'worker') record('export-thread', `the export did not run in a worker (${threadUsed})`);
+await busy.close();
+
 // pagehide libère le contexte audio
 const closing = await newPage();
 await enableSound(closing);

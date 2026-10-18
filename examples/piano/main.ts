@@ -15,18 +15,22 @@ import { isOpusEncodingAvailable } from '../../src/driver/opus.ts';
 import type { RetroPlayer } from '../../src/players/Player.ts';
 import { Region } from '../../src/region.ts';
 import { describeMachines, featured, groupOrder, machines, names } from './machines.ts';
+import exportWorkerSource from './export.worker.embedded';
+import type { ExportReply, ExportVoice } from './export.worker.ts';
 import { currentLang, initialLang, languages, setLang, t, translatePage } from './i18n.ts';
 import type { Key, Lang } from './i18n.ts';
 import { songs } from './songs.ts';
 
 const element = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
 const model = element<HTMLSelectElement>('model');
+const volume = element<HTMLInputElement>('volume');
 const octave = element<HTMLInputElement>('octave');
 const status = element<HTMLOutputElement>('status');
 const keyboard = element<HTMLDivElement>('keyboard');
 const held = new Map<string, number>();
 /** the SoundFont banks the user opened: their presets are models too, added to the list of the page */
-const loadedBanks: { id: string; name: string; definitions: InstrumentDef[] }[] = [];
+/** la banque est gardée avec sa source : l'export la relit dans le worker à partir du fichier d'origine */
+const loadedBanks: { id: string; name: string; definitions: InstrumentDef[]; source: BankSource }[] = [];
 const definitionOf = (id: string): InstrumentDef | undefined =>
 	instrumentCatalogue.find((definition) => definition.info.id === id) ??
 	loadedBanks.flatMap((bank) => bank.definitions).find((definition) => definition.info.id === id);
@@ -282,6 +286,7 @@ function choose(): void {
 	controls();
 	presets();
 	paintMachines();
+	paintRandomModels();
 	attach();
 }
 function buildModelList(): void {
@@ -343,6 +348,69 @@ async function ensureAudio(): Promise<boolean> {
 	}
 }
 element('audio').addEventListener('click', () => void ensureAudio(), options);
+
+/** the page's two modes: simple (a handful of random models and the keyboard), complex (everything) */
+const modeStorage = 'mwg-retro-audio-demo-mode';
+const panelSimple = element<HTMLElement>('panel-simple');
+const panelComplex = element<HTMLElement>('panel-complex');
+function setMode(mode: 'simple' | 'complex'): void {
+	panelSimple.hidden = mode !== 'simple';
+	panelComplex.hidden = mode !== 'complex';
+	element('tabSimple').setAttribute('aria-selected', String(mode === 'simple'));
+	element('tabComplex').setAttribute('aria-selected', String(mode === 'complex'));
+	try {
+		localStorage.setItem(modeStorage, mode);
+	} catch {
+		// storage blocked: the mode simply starts over next time
+	}
+}
+element('tabSimple').addEventListener('click', () => setMode('simple'), options);
+element('tabComplex').addEventListener('click', () => setMode('complex'), options);
+try {
+	const saved = localStorage.getItem(modeStorage);
+	setMode(saved === 'complex' ? 'complex' : 'simple');
+} catch {
+	setMode('simple');
+}
+/**
+ * Eight playable models drawn from the hat out of the catalogue; a click switches model,
+ * the current one is highlighted; the dice button draws eight others.
+ */
+let randomModels: InstrumentDef[] = [];
+function drawRandomModels(): void {
+	const pool: InstrumentDef[] = [...instrumentCatalogue];
+	for (let i = pool.length - 1; i > 0; i--) {
+		const j = Math.floor(Math.random() * (i + 1));
+		[pool[i], pool[j]] = [pool[j], pool[i]];
+	}
+	randomModels = pool.slice(0, 8);
+	paintRandomModels();
+}
+function paintRandomModels(): void {
+	const bar = element<HTMLDivElement>('randomModels');
+	bar.replaceChildren();
+	for (const definition of randomModels) {
+		const button = document.createElement('button');
+		button.type = 'button';
+		button.dataset.model = definition.info.id;
+		button.textContent = definition.info.name;
+		button.title = definition.info.description;
+		button.setAttribute('aria-pressed', String(model.value === definition.info.id));
+		button.addEventListener('click', () => {
+			void ensureAudio();
+			model.value = definition.info.id;
+			choose();
+		});
+		bar.append(button);
+	}
+	const reroll = document.createElement('button');
+	reroll.type = 'button';
+	reroll.textContent = t('randomReroll');
+	reroll.title = t('randomRerollTitle');
+	reroll.addEventListener('click', drawRandomModels);
+	bar.append(reroll);
+}
+drawRandomModels();
 
 const songSelect = element<HTMLSelectElement>('song');
 const playButton = element<HTMLButtonElement>('play');
@@ -535,12 +603,45 @@ const ticker = setInterval(() => {
 element<HTMLInputElement>('volume').addEventListener(
 	'input',
 	(event) => {
-		if (gain)
-			gain.gain.setTargetAtTime(Number((event.target as HTMLInputElement).value), context!.currentTime, 0.01);
+		const value = Number((event.target as HTMLInputElement).value);
+		if (gain) gain.gain.setTargetAtTime(value, context!.currentTime, 0.01);
+		// raising the slider by hand cancels the pending reactivation of the emergency button
+		if (mutedByPanic && value > 0) {
+			mutedByPanic = false;
+			paintPanic();
+		}
 	},
 	options,
 );
-element('panic').addEventListener('click', panic, options);
+/**
+ * The emergency button is a switch: it cuts the notes and silences the page, and the same
+ * button then brings the sound back at the volume it had before the cut.
+ */
+let mutedByPanic = false;
+let volumeBeforePanic = volume.value;
+function paintPanic(): void {
+	element('panic').textContent = t(mutedByPanic ? 'panicAgain' : 'panic');
+}
+element('panic').addEventListener(
+	'click',
+	() => {
+		if (!mutedByPanic) {
+			panic();
+			volumeBeforePanic = volume.value;
+			volume.value = '0';
+			if (gain && context) gain.gain.setTargetAtTime(0, context.currentTime, 0.01);
+			mutedByPanic = true;
+			say('panicCut');
+		} else {
+			volume.value = volumeBeforePanic || '0.6';
+			if (gain && context) gain.gain.setTargetAtTime(Number(volume.value), context.currentTime, 0.01);
+			mutedByPanic = false;
+			say('panicOn');
+		}
+		paintPanic();
+	},
+	options,
+);
 element('reset').addEventListener(
 	'click',
 	() => {
@@ -599,7 +700,7 @@ async function openBank(source: BankSource): Promise<void> {
 		if (file.size > SF_MAX_BYTES) return say('sfTooBig', { name: source.name, limit: formatSize(SF_MAX_BYTES) });
 		const font = parseSf2(new Uint8Array(await file.arrayBuffer()));
 		const id = soundFontBankId(source.name);
-		const bank = { id, name: font.name || source.name, definitions: soundFontInstruments(font, id) };
+		const bank = { id, name: font.name || source.name, definitions: soundFontInstruments(font, id), source };
 		if (!bank.definitions.length) return say('sfBad', { error: 'no preset' });
 		const known = loadedBanks.findIndex((entry) => entry.id === id);
 		if (known >= 0) loadedBanks.splice(known, 1);
@@ -686,6 +787,80 @@ void isOpusEncodingAvailable().then((available) => {
 });
 const formatSize = (bytes: number): string =>
 	bytes < 1024 * 1024 ? `${Math.round(bytes / 1024)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+/** the thread the last export ran on; the browser check reads it to prove the worker is used */
+const retroWindow = window as unknown as { __retroExportThread?: 'worker' | 'inline' };
+retroWindow.__retroExportThread = 'inline';
+let exportWorker: Worker | undefined;
+let exportWorkerFailed = false;
+let exportSeq = 0;
+const exportWaiters = new Map<
+	number,
+	{ onProgress: (fraction: number) => void; done: (blob: Blob) => void; fail: (error: Error) => void }
+>();
+/** the export thread, created once from its embedded source; null when this browser or page cannot have one */
+function getExportWorker(): Worker | null {
+	if (exportWorkerFailed) return null;
+	if (exportWorker) return exportWorker;
+	// built without the embed plugin (or no Worker in this browser): fall back to the page thread
+	if (!exportWorkerSource || typeof Worker === 'undefined') {
+		exportWorkerFailed = true;
+		return null;
+	}
+	try {
+		const url = URL.createObjectURL(new Blob([exportWorkerSource], { type: 'text/javascript' }));
+		const worker = new Worker(url);
+		// no early URL.revokeObjectURL: the thread has not necessarily read the blob yet
+		worker.onmessage = (event: MessageEvent<ExportReply>) => {
+			const { id, progress, buffer, mime, error } = event.data;
+			if (id === undefined || (!buffer && progress === undefined && !error)) return;
+			const waiter = exportWaiters.get(id);
+			if (!waiter) return;
+			if (progress !== undefined && !buffer && !error) return waiter.onProgress(progress);
+			exportWaiters.delete(id);
+			if (error) return waiter.fail(new Error(error));
+			waiter.done(new Blob([buffer!], { type: mime ?? 'application/octet-stream' }));
+		};
+		worker.onerror = (event) => {
+			// a worker that cannot even load: every waiter falls back, and no further export tries it
+			exportWorkerFailed = true;
+			exportWorker = undefined;
+			worker.terminate();
+			const why = new Error(`export worker: ${event.message || 'unavailable'}`);
+			for (const waiter of exportWaiters.values()) waiter.fail(why);
+			exportWaiters.clear();
+		};
+		exportWorker = worker;
+		return worker;
+	} catch {
+		exportWorkerFailed = true;
+		return null;
+	}
+}
+/** the voice to rebuild in the worker: a SoundFont preset carries its bank's bytes, re-read from its file */
+async function exportVoice(): Promise<ExportVoice> {
+	const key = element<HTMLSelectElement>('songVoice').value === 'standard' ? 'simple:Piano' : instrument.info.id;
+	const controls: [string, number | boolean][] =
+		key === instrument.info.id ? instrument.controls.map((control) => [control.id, control.get()]) : [];
+	const match = /^soundfont:(.+):(\d+)$/.exec(key);
+	const bank = match ? loadedBanks.find((entry) => entry.id === match[1]) : undefined;
+	if (!bank) return { id: key, controls };
+	const file = await bank.source.file();
+	return { id: key, controls, bank: { bytes: await file.arrayBuffer(), id: bank.id, preset: Number(match![2]) } };
+}
+/** render and encode in the worker thread; any answer other than a blob rejects to the caller's fallback */
+function exportOnWorker(voice: ExportVoice, song: MidiSong, kind: AudioFormat, rate: number, title: string, onProgress: (fraction: number) => void): Promise<Blob> {
+	const worker = getExportWorker();
+	if (!worker) return Promise.reject(new Error('no export worker in this page'));
+	return new Promise<Blob>((resolve, reject) => {
+		const id = ++exportSeq;
+		exportWaiters.set(id, { onProgress, done: resolve, fail: reject });
+		const name = definitionOf(voice.id)?.info.name ?? voice.id;
+		worker.postMessage(
+			{ id, voice, events: song.events, duration: song.duration, sampleRate: rate, format: kind, title, comment: `${name} — mwg-retro-audio` },
+			voice.bank ? [voice.bank.bytes] : [],
+		);
+	});
+}
 /** a copy of the live instrument for an offline render: same model, same settings, and no disturbing the live notes */
 function offlineVoice(rate: number): Instrument {
 	const key = element<HTMLSelectElement>('songVoice').value === 'standard' ? 'simple:Piano' : instrument.info.id;
@@ -718,19 +893,32 @@ async function exportSong(): Promise<void> {
 	try {
 		const rate = context?.sampleRate ?? 44100;
 		const song = entry.song();
-		const voice = offlineVoice(rate);
-		const player = new MidiPlayer(song, { sampleRate: rate }, new InstrumentMidiSink(voice));
-		const rendered = await renderPlayerAsync(player, {
-			maxSeconds: song.duration + 2,
-			fadeOut: 0.05,
-			onProgress: (fraction) => {
-				exportProgress.value = fraction;
-				say('exportProgress', { title: entry.title(), percent: Math.round(fraction * 100) });
-			},
-		});
-		const blob = await exportAudioBlob(rendered, kind, {
-			tags: { TITLE: entry.title(), COMMENT: `${voice.info.name} — mwg-retro-audio` },
-		});
+		const onProgress = (fraction: number): void => {
+			exportProgress.value = fraction;
+			say('exportProgress', { title: entry.title(), percent: Math.round(fraction * 100) });
+		};
+		let blob: Blob | undefined;
+		try {
+			// another thread renders the file: the music playing on the page keeps running
+			blob = await exportOnWorker(await exportVoice(), song, kind, rate, entry.title(), onProgress);
+			retroWindow.__retroExportThread = 'worker';
+		} catch {
+			blob = undefined;
+		}
+		if (!blob) {
+			// no worker (or the worker failed): the same render inside the page, giving time back regularly
+			const voice = offlineVoice(rate);
+			const player = new MidiPlayer(song, { sampleRate: rate }, new InstrumentMidiSink(voice));
+			const rendered = await renderPlayerAsync(player, {
+				maxSeconds: song.duration + 2,
+				fadeOut: 0.05,
+				onProgress,
+			});
+			blob = await exportAudioBlob(rendered, kind, {
+				tags: { TITLE: entry.title(), COMMENT: `${voice.info.name} — mwg-retro-audio` },
+			});
+			retroWindow.__retroExportThread = 'inline';
+		}
 		const stamp = new Date().toISOString().slice(0, 16).replace(/[-:]/g, '').replace('T', '-');
 		const base = soundFontBankId(entry.title()) || 'song';
 		saveBlob(blob, `${base}-${stamp}.${AUDIO_FORMATS[kind].extension}`);
@@ -914,6 +1102,7 @@ window.addEventListener(
 		panic();
 		clearInterval(ticker);
 		stream?.stop();
+		exportWorker?.terminate();
 		gain?.disconnect();
 		void context?.close();
 		lifetime.abort();
@@ -939,6 +1128,8 @@ function applyLanguage(code: Lang): void {
 	refreshMidiLabel();
 	paintKeysHelp();
 	paintRecorder();
+	paintRandomModels();
+	paintPanic();
 	buildBankList();
 	paintExport();
 	status.value = t(said.key, said.values);

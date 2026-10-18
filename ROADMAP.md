@@ -148,7 +148,11 @@ Validé par `tools/piano-check.mjs` avec le MIDI simulé.
   l'instrument qui garde ses réglages) puis l'encode en FLAC, Opus ou WAV par
   `exportAudioBlob` ; l'option Opus est grisée quand `isOpusEncodingAvailable()` est
   faux. `tests/take-export.test.ts` décode le FLAC (MD5 vérifié) ; `piano-check`
-  vérifie les trois fichiers téléchargés dans Chrome 155.
+  vérifie les trois fichiers téléchargés dans Chrome 155. Depuis : le rendu passe
+  par un Web Worker dédié (`examples/piano/export.worker.ts`, texte embarqué dans la
+  page par `tools/worker-plugin.mjs`) — `piano-check` vérifie que les notes et
+  l'horloge du morceau restent vivants pendant l'export ; sans worker, la page
+  retombe sur `renderPlayerAsync` dans son propre fil.
 - [x] Choisir un répertoire de son ordinateur (ou un disque monté, ou une autre
   source) et y lire les MIDI : sélecteur de dossier (`showDirectoryPicker`, Chrome et
   Edge ; repli sur le sélecteur de fichier actuel ailleurs), parcours des `.mid` et
@@ -162,6 +166,15 @@ Validé par `tools/piano-check.mjs` avec le MIDI simulé.
   grisé et le sélecteur de fichiers accepte plusieurs `.mid`/`.xmi`. **Simulé** : le
   sélecteur de dossier est une fausse API dans `piano-check` (liste, abandon, refus,
   absence) ; aucun vrai dossier ni disque monté n'a été essayé.
+- [x] Deux modes pour la page de démo et coupure d'urgence silencieuse : le mode
+  simple ouvre la page (huit boutons de modèles tirés au hasard du catalogue, 🎲
+  pour relancer le tirage, clavier sous la main, son au premier appui), le mode
+  complet garde toute l'interface ; le bouton « ⚠️ Coupure d'urgence » coupe les
+  notes ET met le volume à zéro, puis devient « 🔊 Réactiver le son » qui rend le
+  volume d'avant.
+  Livré : `examples/piano/` ; choix du mode retenu en `localStorage` ; les scénarios
+  modes, coupure/réactivation et export en fil séparé sont vérifiés par
+  `tools/piano-check.mjs`.
 
 ### 6. Moteurs MIDI pour tous les modèles, banques SoundFont, microKORG
 

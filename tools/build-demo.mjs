@@ -1,6 +1,7 @@
 import { build } from 'esbuild';
 import { readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { embeddedWorkers } from './worker-plugin.mjs';
 
 // Page autonome : le JS de l'exemple piano est inliné dans index.html, ce qui permet de l'ouvrir
 // directement (file://) sans serveur local, un script module externe y étant bloqué par le navigateur.
@@ -15,6 +16,7 @@ const { outputFiles } = await build({
 	minify: true,
 	format: 'iife',
 	write: false,
+	plugins: [embeddedWorkers()],
 	logLevel: 'warning',
 });
 const script = outputFiles[0].text.replaceAll('</script', '<\/script');

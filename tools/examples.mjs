@@ -1,5 +1,6 @@
 import { context } from 'esbuild';
 import { resolve } from 'node:path';
+import { embeddedWorkers } from './worker-plugin.mjs';
 
 const name = process.argv[2] ?? 'tonejs';
 if (!['tonejs', 'piano'].includes(name)) throw new Error('Unknown example');
@@ -12,6 +13,7 @@ const build = await context({
 	loader: { '.mid': 'binary' },
 	format: 'esm',
 	sourcemap: true,
+	plugins: name === 'piano' ? [embeddedWorkers()] : [],
 	logLevel: 'info',
 });
 await build.watch();
