@@ -37,3 +37,7 @@ This folder has no accessible Git history, so no existing commit convention can 
 ## Licensing & Assets
 
 Preserve MPL-2.0 notices and the separate GPL boundary around `vendor/hatari-ym/`. Do not add proprietary sample ROMs or ROM-derived samples. Document fixture provenance and licensing.
+
+## Model Choice
+
+Always try the cheapest model that can do the job: Haiku for Claude, Luna for OpenAI. By default use Sonnet; ask Opus for advice when a decision is hard; use Haiku for simple, mechanical tasks (renames, one-line fixes, searches, formatting).
