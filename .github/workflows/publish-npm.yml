@@ -7,6 +7,8 @@ on:
 
 jobs:
   publish:
+    # a release or a manual run counts only on a version tag: a run started from a branch never publishes
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
       contents: read
