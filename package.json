@@ -31,6 +31,10 @@
 			"types": "./dist/mwg/index.d.ts",
 			"default": "./dist/mwg/index.js"
 		},
+		"./mwg/catalogue": {
+			"types": "./dist/mwg/catalogueEngines.d.ts",
+			"default": "./dist/mwg/catalogueEngines.js"
+		},
 		"./instruments": {
 			"types": "./dist/instruments/index.d.ts",
 			"default": "./dist/instruments/index.js"

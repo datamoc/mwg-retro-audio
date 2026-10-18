@@ -61,7 +61,7 @@ nommés, `SfxBank` / `SfxBackend`, `AudioSettings`, `.mwp` avec `requires.retroA
 doubles de test). Le paquet y répond dans `src/mwg/` : `retroBlockSource` et
 `retroLoopRegion` (lecture à la demande et recherche, sans tout rendre),
 `registerRetroMidiEngines` avec `retro:mt32`, `retro:dx7` (dumps SysEx de 32 voix)
-et `retro:d50`, `retroSfxBackend` + `toMwgSfxDefinition` (+ `SfxEngine.isActive`),
+et `retro:d50`, les 46 modèles du catalogue en `retro:<id>` (`/mwg/catalogue`, `InstrumentMidiSynth` : canaux fusionnés, percussions omises, voix élaguées à la polyphonie du modèle, pitch bend de ±2 demi-tons et pédale de sustain transmis, programmes et SysEx ignorés ; **validé** par `tests/mwg-engines.test.ts` : les 46 moteurs voisent un MIDI de trois accords à travers `renderMidiThroughSynth`, un vrai fichier (Ancient Mysteries) passe par trois moteurs de familles différentes, `onMidiSynthFallback` signale un nom inconnu ou une fabrique qui échoue), `retroSfxBackend` + `toMwgSfxDefinition` (+ `SfxEngine.isActive`),
 et le mapping `AudioSettings` → options de chargement / étage de sortie.
 Vérifié par `tests/mwg.test.ts` (neuf tests, dont rendu d'un fichier MIDI réel de
 mwg à travers le moteur DX7, flux YM complet dans un `StreamChannel` et formule

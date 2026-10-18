@@ -8,5 +8,6 @@ export {
 	RetroDx7Synth,
 	RetroD50Synth,
 } from './midiEngines.ts';
+export { InstrumentMidiSynth, instrumentEngineName, instrumentMidiEngines } from './instrumentEngines.ts';
 export { retroLoadFor, retroOutputFor, retroSfxEngineOptionsFor } from './settings.ts';
 export { retroSfxBackend, toMwgSfxDefinition, type RetroSfxBackendOptions } from './sfxBackend.ts';

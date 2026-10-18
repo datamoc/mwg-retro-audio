@@ -11,6 +11,8 @@ const entries = {
 	chipBarrel: `import { Ym2149 } from '@datamoc/mwg-retro-audio/chips'; console.log(new Ym2149());`,
 	chipRoot: `import { Ym2149 } from '@datamoc/mwg-retro-audio'; console.log(new Ym2149());`,
 	catalogue: `import { instrumentCatalogue } from '@datamoc/mwg-retro-audio/instruments/catalogue'; console.log(instrumentCatalogue);`,
+	mwgTargeted: `import { instrumentMidiEngines } from '@datamoc/mwg-retro-audio/mwg'; import { psgInstruments } from '@datamoc/mwg-retro-audio/instruments/psg'; console.log(instrumentMidiEngines(psgInstruments));`,
+	mwgCatalogue: `import { retroCatalogueMidiEngines } from '@datamoc/mwg-retro-audio/mwg/catalogue'; console.log(retroCatalogueMidiEngines);`,
 	business: `import * as chips from '@datamoc/mwg-retro-audio/chips'; import * as instruments from '@datamoc/mwg-retro-audio/instruments'; console.log(chips, instruments);`,
 };
 const results = {};
@@ -51,6 +53,18 @@ for (const [name, contents] of Object.entries(entries)) {
 		}
 		assert(!modules.some((path) => path.includes('/instruments/')), 'A single chip retained instrument layers');
 	}
+	if (name === 'mwgTargeted') {
+		assert(
+			!modules.some((path) => /instruments\/(catalogue|synths|modelled|registers|fm-registers|pc-registers)\.js|catalogueEngines/.test(path)),
+			'The mwg entry point with a chosen instrument retained the catalogue',
+		);
+		assert(modules.some((path) => path.endsWith('instruments/psg.js')), 'The chosen instrument is missing');
+	}
+	if (name === 'mwgCatalogue') {
+		assert(modules.some((path) => path.endsWith('instruments/catalogue.js')), 'The catalogue engines dropped the catalogue');
+		const text = output.outputFiles[0].text;
+		for (const id of ['retro:mt32', 'retro:dx7', 'retro:d50', '"ym2149"', '"pcm-dac"']) assert(text.includes(id), `Engine ${id} missing`);
+	}
 	if (name === 'catalogue') {
 		const retainedFormats = modules.filter(
 			(path) => (path.includes('/formats/') || path.includes('/players/')) && !path.endsWith('formats/dx7.js'),
@@ -70,6 +84,7 @@ for (const [name, contents] of Object.entries(entries)) {
 assert(results.profile.bytes < results.catalogue.bytes);
 assert(results.chip.bytes < results.catalogue.bytes);
 assert(results.profile.bytes < results.business.bytes);
+assert(results.mwgTargeted.bytes < results.mwgCatalogue.bytes);
 await writeFile(
 	resolve(root, 'docs/bundle-results.json'),
 	JSON.stringify({ bundler: 'esbuild', results }, null, 2) + '\n',

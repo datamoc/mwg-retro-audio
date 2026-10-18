@@ -15,7 +15,7 @@ Côté paquet, les adaptateurs qui consomment ces contrats vivent dans `src/mwg/
 
 | Section de ce document | Côté mwg (0.44) | Côté `mwg-retro-audio` |
 | --- | --- | --- |
-| 1.1 moteurs MIDI nommés | `registerMidiSynth` / `resolveMidiSynth` / `renderMidiThroughSynth` | `retroMidiEngines`, `registerRetroMidiEngines(registerMidiSynth)` : `retro:mt32`, `retro:dx7` (banques SysEx incluses), `retro:d50` |
+| 1.1 moteurs MIDI nommés | `registerMidiSynth` / `resolveMidiSynth` / `renderMidiThroughSynth` | `retroMidiEngines`, `registerRetroMidiEngines(registerMidiSynth)` : `retro:mt32`, `retro:dx7` (banques SysEx incluses), `retro:d50` ; les 46 modèles du catalogue (`retro:<id>`, `retro:ym2149`, `retro:sid`…) par `@datamoc/mwg-retro-audio/mwg/catalogue` (`registerRetroCatalogueMidiEngines`), ou un choix de modèles par `instrumentMidiEngines(définitions)` |
 | 1.3 contrat de flux continu | `StreamPlayable`, `StreamChannel`, `BlockSource` | `retroBlockSource(player)` et `retroLoopRegion(player)` |
 | 1.4 budgets de décodage | `decoderLimits`, `assertInputSize`, `createBudgetedLoader` | utilisables tels quels autour de `loadFile` / `retroBusLoader` ; **encore ouvert** : crochets de budget d'instructions dans les émulateurs 6502 (NSF/PSID) et SPC, que nos chargeurs n'exposent pas encore |
 | 1.6 effets en données | `SfxBank`, `SfxBackend`, arbitre | `retroSfxBackend({ engine })`, `toMwgSfxDefinition`, `SfxEngine.isActive(id)` |

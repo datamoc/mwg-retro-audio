@@ -164,13 +164,19 @@ Validé par `tools/piano-check.mjs` avec le MIDI simulé.
 
 ### 6. Moteurs MIDI pour tous les modèles, banques SoundFont, microKORG
 
-- [ ] Exposer chaque modèle du catalogue comme moteur MIDI nommé : `retro:<id>`
+- [x] Exposer chaque modèle du catalogue comme moteur MIDI nommé : `retro:<id>`
   fondé sur `InstrumentMidiSink` (fusion des canaux, percussions omises, voix
   élaguées selon la polyphonie — mélodie et basse gardées), enregistré aux côtés de
   `retro:mt32` / `retro:dx7` / `retro:d50` dans `registerRetroMidiEngines` ;
   validation par les tests d'interopérabilité mwg — `renderMidiThroughSynth` d'un
   fichier réel à travers plusieurs moteurs, signal `onMidiSynthFallback`, rendu non
   nul pour chaque moteur — et liste documentée avec `docs/MWG-REQUIREMENTS.md`.
+  Livré : `InstrumentMidiSynth` / `instrumentMidiEngines(définitions)` dans `/mwg` (un
+  choix de modèles, sans catalogue) et `/mwg/catalogue` (`registerRetroCatalogueMidiEngines`,
+  46 moteurs `retro:<id>` ; `retro:mt32`, `retro:dx7` et `retro:d50` gardent leurs
+  moteurs dédiés avec SysEx). Le catalogue n'entre pas dans `/mwg` : `check:bundles`
+  le vérifie (`mwgTargeted` 16 Ko, `mwgCatalogue` 169 Ko ; profil et puce seuls
+  inchangés). Tests : `tests/mwg-engines.test.ts`.
 - [ ] Banques de sons SoundFont : choisir un répertoire de son disque où l'utilisateur
   pose ses `.sf2` et `.sf3`, les lister et y jouer les préréglages — décodage RIFF
   (`sdtp`/`pdta` : échantillons PCM 16 bits, zones, modulateurs essentiels ; le SF3

@@ -32,6 +32,8 @@ Mesure du 17 octobre 2026, code minifié (octets ; gzip à titre comparatif) :
 | YM2149 depuis `/chips` | 3 170 | 1 344 |
 | YM2149 depuis l'entrée principale | 3 170 | 1 344 |
 | Catalogue complet des instruments (`/instruments/catalogue`) | 148 318 | 47 769 |
+| Moteurs MIDI nommés, un choix de modèles (`/mwg` + `/instruments/psg`) | 16 163 | 5 848 |
+| Moteurs MIDI nommés, les 46 modèles (`/mwg/catalogue`) | 168 544 | 55 389 |
 | Exports des puces et instruments disponibles | 118 603 | 37 751 |
 
 Le contrôle refuse un bundle de profil simple contenant les émulateurs,
