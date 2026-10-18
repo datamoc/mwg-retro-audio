@@ -30,7 +30,7 @@
 		{
 			"id": "sid-8580",
 			"name": "MOS 8580 SID — Commodore 64 (révision tardive), Commodore 128",
-			"peak": 0.2012,
+			"peak": 0.1952,
 			"controls": 9
 		},
 		{
@@ -102,7 +102,7 @@
 		{
 			"id": "mmc5",
 			"name": "Nintendo MMC5 — NES / Famicom (cartouche MMC5)",
-			"peak": 0.0736,
+			"peak": 0.0459,
 			"controls": 8
 		},
 		{
@@ -114,7 +114,7 @@
 		{
 			"id": "namco163",
 			"name": "Namco 163 — Famicom (cartouche Namco)",
-			"peak": 0.1002,
+			"peak": 0.1416,
 			"controls": 8
 		},
 		{
@@ -150,25 +150,25 @@
 		{
 			"id": "sound-blaster",
 			"name": "Sound Blaster (OPL2) — PC (Sound Blaster 1.x / 2.0)",
-			"peak": 0.1191,
+			"peak": 0.1165,
 			"controls": 6
 		},
 		{
 			"id": "cms",
 			"name": "C/MS Game Blaster — PC (Game Blaster)",
-			"peak": 0.06,
+			"peak": 0.0607,
 			"controls": 8
 		},
 		{
 			"id": "pcm-dac",
 			"name": "Sample DAC (Covox) — PC (Covox Speech Thing)",
-			"peak": 0.3609,
-			"controls": 2
+			"peak": 0.1641,
+			"controls": 5
 		},
 		{
 			"id": "d50",
 			"name": "Roland D-50",
-			"peak": 0.0551,
+			"peak": 0.1453,
 			"controls": 16
 		},
 		{
@@ -204,19 +204,19 @@
 		{
 			"id": "additive",
 			"name": "Bell Labs Digital Synthesizer",
-			"peak": 0.1789,
+			"peak": 0.1803,
 			"controls": 5
 		},
 		{
 			"id": "dartmouth",
 			"name": "Dartmouth Digital Synthesizer",
-			"peak": 0.1796,
+			"peak": 0.1803,
 			"controls": 5
 		},
 		{
 			"id": "synclavier",
 			"name": "Synclavier",
-			"peak": 0.0935,
+			"peak": 0.0934,
 			"controls": 6
 		},
 		{
@@ -228,7 +228,7 @@
 		{
 			"id": "ai-synth",
 			"name": "Structure AI",
-			"peak": 0.0542,
+			"peak": 0.0544,
 			"controls": 5
 		},
 		{
@@ -264,7 +264,7 @@
 		{
 			"id": "simple:Bass",
 			"name": "Bass",
-			"peak": 0.0115,
+			"peak": 0.0117,
 			"controls": 1
 		},
 		{
@@ -288,7 +288,7 @@
 		{
 			"id": "simple:Synth",
 			"name": "Synth",
-			"peak": 0.0081,
+			"peak": 0.008,
 			"controls": 1
 		}
 	],

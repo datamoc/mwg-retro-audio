@@ -180,7 +180,7 @@ function opnDefinition(
 						slot(channel, 0xb0, (feedback.value << 3) | 4);
 						slot(channel, 0xb4, 0xc0);
 						slot(channel, 0x30, ratio.value & 15);
-						slot(channel, 0x38, 0);
+						slot(channel, 0x38, 1); // carrier at the note itself (a multiplier of 0 is half)
 						slot(channel, 0x44, 0x7f);
 						slot(channel, 0x4c, 0x7f);
 						slot(channel, 0x40, modLevel.value);

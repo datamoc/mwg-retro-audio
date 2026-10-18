@@ -79,7 +79,7 @@ export class Vrc6 extends BoxRenderer implements Chip {
 					this.count[ch] = p;
 					this.pos[ch] = (this.pos[ch] + 1) & 15;
 				} else {
-					this.count[ch] = p * 2;
+					this.count[ch] = p; // 14 ticks a cycle: CPU / (14 × (period + 1))
 					this.pos[ch]++;
 					if (this.pos[ch] >= 14) {
 						this.pos[ch] = 0;
@@ -160,12 +160,19 @@ export class Mmc5 implements Chip {
 		this.clock = options.clock ?? 1_789_773;
 		this.sampleRate = options.sampleRate ?? 44100;
 		this.apu = new NesApu({ ...options, clock: this.clock, sampleRate: this.sampleRate });
+		this.noSweep();
+	}
+
+	/** frame counter in 5-step mode, and the sweep units off: the MMC5 pulses have none, so they never mute a low period */
+	private noSweep(): void {
 		this.apu.write(0x17, 0x40);
+		this.apu.write(0x01, 0x08);
+		this.apu.write(0x05, 0x08);
 	}
 
 	reset(): void {
 		this.apu.reset();
-		this.apu.write(0x17, 0x40);
+		this.noSweep();
 		this.mul = [0, 0];
 	}
 

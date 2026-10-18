@@ -9,7 +9,7 @@ import { VoiceInstrument } from './VoiceInstrument.ts';
 import { VoiceAllocator } from './VoiceAllocator.ts';
 import { BaseInstrument } from './BaseInstrument.ts';
 import { choiceControl, labelled, param, rangeControl } from './controls.ts';
-import type { InstrumentDef, InstrumentInfo, InstrumentOptions } from './Instrument.ts';
+import type { ChoiceOption, InstrumentDef, InstrumentInfo, InstrumentOptions } from './Instrument.ts';
 
 const appleInfo: InstrumentInfo = {
 	id: 'apple2-speaker',
@@ -65,39 +65,105 @@ const dacInfo: InstrumentInfo = {
 	name: 'Sample DAC (Covox)',
 	family: 'sampler',
 	era: '1985',
-	polyphony: 1,
-	pitched: false,
+	polyphony: 4,
 	description:
-		'Convertisseur stéréo 8 bits sans hauteur musicale : une note impose la tension de sortie selon sa vélocité, le relâchement revient au centre du convertisseur.',
+		'Convertisseur stéréo 8 bits tenu sur la dernière valeur écrite (Covox Speech Thing, Sound Blaster en sortie directe). Il n’a pas de voix propre : un lecteur logiciel calcule la forme d’onde de chaque note, mélange les voix et écrit une valeur 8 bits au rythme choisi, comme le faisaient les lecteurs de modules sur ce matériel.',
 };
+
+const DAC_WAVES: readonly ChoiceOption[] = [
+	{ value: 0, label: 'Triangle' },
+	{ value: 1, label: 'Sinus' },
+	{ value: 2, label: 'Dent de scie' },
+	{ value: 3, label: 'Carré' },
+];
+const DAC_RATES: readonly ChoiceOption[] = [8000, 11025, 16000, 22050, 32000, 44100].map((hz) => ({
+	value: hz,
+	label: `${hz} Hz`,
+}));
+
+interface DacVoice {
+	note: number;
+	phase: number;
+	gain: number;
+	/** 0 while the note is held, then the release factor applied each written sample */
+	level: number;
+	releasing: boolean;
+}
+
+/** one cycle of the waveform at `phase` in 0..1, in -1..1 */
+function dacWave(kind: number, phase: number): number {
+	if (kind === 1) return Math.sin(2 * Math.PI * phase);
+	if (kind === 2) return 2 * phase - 1;
+	if (kind === 3) return phase < 0.5 ? 1 : -1;
+	return phase < 0.5 ? 4 * phase - 1 : 3 - 4 * phase;
+}
 
 class SampleDacInstrument extends BaseInstrument {
 	readonly info = dacInfo;
 	readonly chip: PcmDac = new PcmDac({ sampleRate: this.sampleRate, stereo: true });
 	private readonly maximum = param(100);
 	private readonly pan = param(0);
-	private sounding = -1;
+	private readonly wave = param(0);
+	private readonly rate = param(22050);
+	private readonly release = param(0.25);
+	private readonly voices: DacVoice[] = [];
+	/** position inside the current held sample, in output samples */
+	private hold = 1;
 	constructor(options: InstrumentOptions = {}) {
 		super(options);
 		this.controls = [
 			rangeControl({ id: 'level', label: 'Niveau maximal', min: 0, max: 127, step: 1 }, this.maximum),
 			rangeControl({ id: 'pan', label: 'Panoramique', min: -1, max: 1, step: 0.01 }, this.pan),
+			choiceControl({ id: 'wave', label: 'Forme d’onde calculée', group: 'Lecteur' }, DAC_WAVES, this.wave),
+			choiceControl({ id: 'rate', label: 'Cadence d’écriture', group: 'Lecteur' }, DAC_RATES, this.rate),
+			rangeControl(
+				{ id: 'release', label: 'Relâchement', group: 'Lecteur', min: 0.02, max: 2, step: 0.01, unit: 's' },
+				this.release,
+			),
 		];
 	}
 	protected override restore(): void {
-		this.sounding = -1;
-	}
-	protected press(note: number, velocity: number): void {
-		const amplitude = (this.maximum.value / 127) * (0.25 + 0.75 * (velocity / 127) ** 1.5);
-		this.chip.write(0, 128 + Math.round(127 * amplitude * Math.min(1, 1 - this.pan.value)));
-		this.chip.write(1, 128 + Math.round(127 * amplitude * Math.min(1, 1 + this.pan.value)));
-		this.sounding = note;
-	}
-	protected lift(note: number): void {
-		if (this.sounding !== note) return;
+		this.voices.length = 0;
+		this.hold = 1;
 		this.chip.write(0, 128);
 		this.chip.write(1, 128);
-		this.sounding = -1;
+	}
+	protected press(note: number, velocity: number): void {
+		const gain = (this.maximum.value / 127) * (0.25 + 0.75 * (velocity / 127) ** 1.5) * 0.45;
+		const voice: DacVoice = { note, phase: 0, gain, level: 1, releasing: false };
+		const free = this.voices.findIndex((v) => v.level <= 0);
+		if (free >= 0) this.voices[free] = voice;
+		else if (this.voices.length < this.info.polyphony) this.voices.push(voice);
+		else {
+			const oldest = this.voices.findIndex((v) => v.releasing);
+			this.voices[oldest >= 0 ? oldest : 0] = voice;
+		}
+	}
+	protected lift(note: number): void {
+		for (const voice of this.voices) if (voice.note === note && !voice.releasing) voice.releasing = true;
+	}
+	override render(left: Float32Array, right: Float32Array, start: number, count: number): void {
+		const step = this.rate.value / this.sampleRate;
+		const fall = 1 / (this.release.value * this.rate.value);
+		const pan = this.pan.value;
+		for (let i = 0; i < count; i++) {
+			this.hold += step;
+			if (this.hold >= 1) {
+				this.hold -= 1;
+				let mix = 0;
+				for (const voice of this.voices) {
+					if (voice.level <= 0) continue;
+					mix += dacWave(this.wave.value, voice.phase) * voice.gain * voice.level;
+					voice.phase += this.hz(voice.note) / this.rate.value;
+					voice.phase -= Math.floor(voice.phase);
+					if (voice.releasing) voice.level = Math.max(0, voice.level - fall);
+				}
+				mix = Math.max(-1, Math.min(1, mix));
+				this.chip.write(0, 128 + Math.round(127 * mix * Math.min(1, 1 - pan)));
+				this.chip.write(1, 128 + Math.round(127 * mix * Math.min(1, 1 + pan)));
+			}
+			this.chip.render(left, right, start + i, 1);
+		}
 	}
 }
 

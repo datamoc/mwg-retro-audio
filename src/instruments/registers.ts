@@ -148,7 +148,12 @@ export const registerInstruments: readonly InstrumentDef[] = [
 								duty,
 							),
 						],
-						restore: () => chip.write(0x4015, 3),
+						// sweep off with negate set: with a zero shift the unit would otherwise mute every period over $3FF
+						restore: () => {
+							chip.write(0x4015, 3);
+							chip.write(0x4001, 0x08);
+							chip.write(0x4005, 0x08);
+						},
 						pitch,
 						start: (channel, hz) => pitch(channel, hz),
 						level: (channel, level) =>
@@ -169,7 +174,7 @@ export const registerInstruments: readonly InstrumentDef[] = [
 			const pitch = (channel: number, hz: number): void => {
 				const period = Math.max(
 					0,
-					Math.min(511, Math.round(chip.clock / ((channel === 2 ? 28 : 16) * hz)) - 1),
+					Math.min(4095, Math.round(chip.clock / ((channel === 2 ? 14 : 16) * hz)) - 1),
 				);
 				chip.write(base(channel) | 1, period & 255);
 				chip.write(base(channel) | 2, 0x80 | (period >> 8));
@@ -197,7 +202,7 @@ export const registerInstruments: readonly InstrumentDef[] = [
 							? chip.write(0xb000, Math.round(Math.max(0, Math.min(63, level * 63))))
 							: chip.write(
 									base(channel),
-									0x80 | (duty.value << 4) | Math.round(Math.max(0, Math.min(15, level * 15))),
+									(duty.value << 4) | Math.round(Math.max(0, Math.min(15, level * 15))),
 								),
 					stop: (channel) => {
 						chip.write(channel === 2 ? 0xb000 : base(channel), 0);
@@ -229,7 +234,11 @@ export const registerInstruments: readonly InstrumentDef[] = [
 							duty,
 						),
 					],
-					restore: () => chip.write(0x1015, 3),
+					restore: () => {
+						chip.write(0x1015, 3);
+						chip.write(0x1001, 0x08);
+						chip.write(0x1005, 0x08);
+					},
 					pitch,
 					start: (channel, hz) => pitch(channel, hz),
 					level: (channel, level) =>
