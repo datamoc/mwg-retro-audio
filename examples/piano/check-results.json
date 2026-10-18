@@ -18,7 +18,7 @@
 		{
 			"id": "tandy",
 			"name": "Tandy SN76489 — Tandy 1000, IBM PCjr",
-			"peak": 0.1191,
+			"peak": 0.1271,
 			"controls": 7
 		},
 		{
@@ -84,7 +84,7 @@
 		{
 			"id": "nes-apu",
 			"name": "NES APU NTSC — Nintendo NES / Famicom (NTSC)",
-			"peak": 0.0946,
+			"peak": 0.0752,
 			"controls": 8
 		},
 		{
@@ -114,7 +114,7 @@
 		{
 			"id": "namco163",
 			"name": "Namco 163 — Famicom (cartouche Namco)",
-			"peak": 0.1,
+			"peak": 0.1002,
 			"controls": 8
 		},
 		{
@@ -174,13 +174,13 @@
 		{
 			"id": "m1",
 			"name": "Korg M1",
-			"peak": 0.0775,
+			"peak": 0.0854,
 			"controls": 8
 		},
 		{
 			"id": "gs1",
 			"name": "Yamaha GS-1",
-			"peak": 0.0667,
+			"peak": 0.0706,
 			"controls": 5
 		},
 		{
@@ -210,19 +210,19 @@
 		{
 			"id": "dartmouth",
 			"name": "Dartmouth Digital Synthesizer",
-			"peak": 0.1789,
+			"peak": 0.1796,
 			"controls": 5
 		},
 		{
 			"id": "synclavier",
 			"name": "Synclavier",
-			"peak": 0.091,
+			"peak": 0.0935,
 			"controls": 6
 		},
 		{
 			"id": "la-synth",
 			"name": "Structure LA",
-			"peak": 0.0542,
+			"peak": 0.0578,
 			"controls": 5
 		},
 		{
@@ -240,7 +240,7 @@
 		{
 			"id": "simple:Piano",
 			"name": "Piano",
-			"peak": 0.0207,
+			"peak": 0.0206,
 			"controls": 1
 		},
 		{
@@ -264,7 +264,7 @@
 		{
 			"id": "simple:Bass",
 			"name": "Bass",
-			"peak": 0.0113,
+			"peak": 0.0115,
 			"controls": 1
 		},
 		{
@@ -288,7 +288,7 @@
 		{
 			"id": "simple:Synth",
 			"name": "Synth",
-			"peak": 0.008,
+			"peak": 0.0081,
 			"controls": 1
 		}
 	],

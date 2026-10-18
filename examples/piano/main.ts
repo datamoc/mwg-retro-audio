@@ -1047,6 +1047,14 @@ async function generateShare(): Promise<void> {
 		say('shareFail', { error: String(error) });
 	}
 }
+/** a browser only starts sound after a gesture: the dialog's button is that gesture, and asks before sound begins */
+function askToPlay(key: string, title: string): void {
+	const dialog = element<HTMLDialogElement>('shareAsk');
+	if (typeof dialog.showModal !== 'function') return;
+	element('shareAskText').textContent = t('shareAsk', { name: title, model: instrument.info.name });
+	dialog.addEventListener('close', () => dialog.returnValue === 'yes' && void playSong(key), { once: true });
+	dialog.showModal();
+}
 /** apply a shared link at startup: the model and its settings, the octave, the song */
 async function applySharedLink(): Promise<void> {
 	const payload = new URLSearchParams(location.search).get('p');
@@ -1090,6 +1098,7 @@ async function applySharedLink(): Promise<void> {
 		controls();
 		paintExport();
 		say('shareLoaded', { name: loaded || t('noSharedSong'), model: instrument.info.name });
+		if (loaded) askToPlay(songSelect.value, loaded);
 	} catch (error) {
 		say('shareFail', { error: String(error) });
 	}

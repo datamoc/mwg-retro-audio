@@ -571,7 +571,25 @@ if (
 	!/Lien ouvert/.test(shared.status)
 )
 	record('share', JSON.stringify({ ...shared, restoredControl }));
+// le lien demande avant de jouer : le bouton fournit le geste que le navigateur exige
+const asked = await opened.evaluate(() => ({
+	open: document.getElementById('shareAsk').open,
+	text: document.getElementById('shareAskText').textContent,
+}));
+if (!asked.open || !/Ancient/.test(asked.text) || !/DX7/i.test(asked.text)) record('share-ask', JSON.stringify(asked));
+await opened.click('#shareYes');
+await opened
+	.waitForFunction(() => /Lecture/.test(document.getElementById('status').value), null, { timeout: 5000 })
+	.catch(() => record('share-ask', 'the song did not start after Lire'));
 await opened.close();
+const declined = await newPage();
+await declined.goto(shareLinkText);
+await declined.waitForTimeout(400);
+await declined.click('#shareNo');
+await declined.waitForTimeout(300);
+if (/Lecture/.test(await declined.evaluate(() => document.getElementById('status').value)))
+	record('share-ask', 'the song played after Non merci');
+await declined.close();
 await sharePage.close();
 // une banque SoundFont ne voyage pas dans un lien : le partage est refuse et le message le dit
 const refused = await newPage();
