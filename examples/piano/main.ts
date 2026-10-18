@@ -5,6 +5,10 @@ import { InstrumentMidiSink } from '../../src/instruments/InstrumentMidiSink.ts'
 import { isXmi, MidiPlayer, parseSmf, xmiToSmf } from '../../src/formats/midi.ts';
 import type { MidiEvent, MidiSong } from '../../src/formats/midi.ts';
 import { writeSmf } from '../../src/formats/midiWrite.ts';
+import { renderPlayer } from '../../src/driver/Renderer.ts';
+import { AUDIO_FORMATS, exportAudioBlob } from '../../src/driver/export.ts';
+import type { AudioFormat } from '../../src/driver/export.ts';
+import { isOpusEncodingAvailable } from '../../src/driver/opus.ts';
 import type { RetroPlayer } from '../../src/players/Player.ts';
 import { Region } from '../../src/region.ts';
 import { describeMachines, featured, groupOrder, machines, names } from './machines.ts';
@@ -31,7 +35,7 @@ let instrument: Instrument;
 let context: AudioContext | undefined;
 let gain: GainNode | undefined;
 let stream: RetroStream | undefined;
-let current: { song: MidiSong; title: string; index: number } | undefined;
+let current: { song: MidiSong; title: string; key: string; voice: Instrument } | undefined;
 let startedAt = 0;
 const lifetime = new AbortController();
 const options = { signal: lifetime.signal };
@@ -209,15 +213,16 @@ function livePlayer(): RetroPlayer {
 		},
 	};
 }
-function songPlayer(song: MidiSong): RetroPlayer {
-	return new MidiPlayer(song, { sampleRate: context!.sampleRate }, new InstrumentMidiSink(instrument));
+function songPlayer(song: MidiSong, voice: Instrument): RetroPlayer {
+	return new MidiPlayer(song, { sampleRate: context!.sampleRate }, new InstrumentMidiSink(voice));
 }
 /** (re)start the audio stream: the current song when there is one, the keyboard alone otherwise */
 function attach(): void {
 	stream?.stop();
 	stream = undefined;
 	if (!context || !gain) return;
-	const created = new RetroStream(context, gain, current ? songPlayer(current.song) : livePlayer(), {
+	if (current) current.voice = voiceFor(current.key);
+	const created = new RetroStream(context, gain, current ? songPlayer(current.song, current.voice) : livePlayer(), {
 		chunkSeconds: 0.01,
 		lookaheadSeconds: 0.04,
 	});
@@ -333,19 +338,45 @@ const stopButton = element<HTMLButtonElement>('stop');
 const clock = element('clock');
 const progress = element<HTMLProgressElement>('progress');
 const chain = element<HTMLInputElement>('chain');
-let customSong: { song: MidiSong; title: string } | undefined;
 const format = (seconds: number): string =>
 	`${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
 const readSong = (bytes: Uint8Array): MidiSong => parseSmf(isXmi(bytes) ? xmiToSmf(bytes) : bytes);
 
+/** a song of the list: the songs of the page, the files and the folder of the user, and the last take */
+interface Entry {
+	key: string;
+	kind: 'built-in' | 'file' | 'folder' | 'take';
+	title: () => string;
+	song: () => MidiSong;
+}
+const builtIn: Entry[] = songs.map((song, index) => ({
+	key: `built-in:${index}`,
+	kind: 'built-in',
+	title: () => song.title[currentLang()],
+	song: () => readSong(song.bytes),
+}));
+let userEntries: Entry[] = [];
+let takeEntry: Entry | undefined;
+const library = (): Entry[] => [...(takeEntry ? [takeEntry] : []), ...userEntries, ...builtIn];
+const entryOf = (key: string): Entry | undefined => library().find((entry) => entry.key === key);
+
 function buildSongList(): void {
-	const selected = songSelect.value;
+	const selected = songSelect.value || builtIn[0].key;
 	songSelect.replaceChildren();
-	if (customSong) songSelect.add(new Option(customSong.title, 'file'));
-	for (const [index, { title }] of songs.entries()) songSelect.add(new Option(title[currentLang()], String(index)));
-	songSelect.value = selected || '0';
+	for (const entry of library()) songSelect.add(new Option(entry.title(), entry.key));
+	songSelect.value = entryOf(selected) ? selected : builtIn[0].key;
 }
 buildSongList();
+/** the instrument a song plays on: the chosen model, or the plain piano for a take set to the standard voice */
+function voiceFor(key: string): Instrument {
+	if (key === 'take' && element<HTMLSelectElement>('recVoice').value === 'standard')
+		return instrumentCatalogue
+			.find((definition) => definition.info.id === 'simple:Piano')!
+			.create({
+				sampleRate: context?.sampleRate ?? 44100,
+			});
+	return instrument;
+}
 function paintSong(): void {
 	playButton.textContent = current ? t('playAgain') : t('play');
 	stopButton.disabled = !current;
@@ -361,17 +392,22 @@ function paintSong(): void {
 		title: current.title,
 		elapsed: format(elapsed),
 		total: format(current.song.duration),
-		name: instrument.info.name,
+		name: current.voice.info.name,
 	});
 }
-/** play bundled song `index`, or the file the user opened when `index` is -1 */
-async function playSong(index: number): Promise<void> {
-	if (!(await ensureAudio())) return;
+async function playSong(key: string): Promise<void> {
+	const entry = entryOf(key);
+	if (!entry || !(await ensureAudio())) return;
+	let song: MidiSong;
+	try {
+		song = entry.song();
+	} catch (error) {
+		say('fileBad', { error: String(error) });
+		return;
+	}
 	panic();
-	const source =
-		index < 0 ? customSong! : { title: songs[index].title[currentLang()], song: readSong(songs[index].bytes) };
-	current = { ...source, index };
-	songSelect.value = index < 0 ? 'file' : String(index);
+	current = { song, title: entry.title(), key, voice: instrument };
+	songSelect.value = key;
 	attach();
 	paintSong();
 	say('playing', { title: current.title });
@@ -382,36 +418,102 @@ function stopSong(): void {
 	paintSong();
 	say('stopped');
 }
+/** the next song of the list, the take left out; the list starts over after its last entry */
 function nextSong(): void {
 	if (!current) return;
 	if (!chain.checked) return stopSong();
-	void playSong(current.index < 0 ? 0 : (current.index + 1) % songs.length);
+	const queue = library().filter((entry) => entry.kind !== 'take');
+	const at = queue.findIndex((entry) => entry.key === current!.key);
+	void playSong(queue[(at + 1) % queue.length].key);
 }
-playButton.addEventListener(
-	'click',
-	() => void playSong(songSelect.value === 'file' ? -1 : Number(songSelect.value)),
-	options,
-);
-songSelect.addEventListener(
-	'change',
-	() => void playSong(songSelect.value === 'file' ? -1 : Number(songSelect.value)),
-	options,
-);
+playButton.addEventListener('click', () => void playSong(songSelect.value), options);
+songSelect.addEventListener('change', () => void playSong(songSelect.value), options);
 stopButton.addEventListener('click', stopSong, options);
+
+let userCount = 0;
+/** a file or a folder entry; the title is the one in the header of the file, the name of the file without it */
+function userEntry(kind: 'file' | 'folder', name: string, song: MidiSong): Entry {
+	const header = song.title?.replace(/[^\x20-\x7e\u00a0-\u00ff]/g, '').trim();
+	const title = header && !/^track\s*\d*$/i.test(header) ? header : name.replace(/\.(mid|midi|xmi)$/i, '');
+	return { key: `${kind}:${++userCount}`, kind, title: () => title, song: () => song };
+}
 element<HTMLInputElement>('file').addEventListener(
 	'change',
 	async (event) => {
-		const file = (event.target as HTMLInputElement).files?.[0];
-		if (!file) return;
-		try {
-			customSong = { song: readSong(new Uint8Array(await file.arrayBuffer())), title: file.name };
-		} catch (error) {
-			say('fileBad', { error: String(error) });
-			return;
+		const input = event.target as HTMLInputElement;
+		const added: Entry[] = [];
+		for (const file of input.files ?? []) {
+			try {
+				added.push(userEntry('file', file.name, readSong(new Uint8Array(await file.arrayBuffer()))));
+			} catch (error) {
+				say('fileBad', { error: `${file.name}: ${String(error)}` });
+			}
 		}
-		songSelect.querySelector('option[value="file"]')?.remove();
-		songSelect.add(new Option(file.name, 'file'), 0);
-		await playSong(-1);
+		input.value = '';
+		if (!added.length) return;
+		userEntries = [...added, ...userEntries];
+		buildSongList();
+		await playSong(added[0].key);
+	},
+	options,
+);
+
+// a folder of the computer, with the File System Access API (Chrome and Edge); the file input above is the fallback
+interface DirectoryHandle {
+	name: string;
+	entries(): AsyncIterable<[string, { kind: 'file' | 'directory'; name: string }]>;
+}
+const MAX_FOLDER_FILES = 500;
+const MAX_FILE_BYTES = 8 * 1024 * 1024;
+const MAX_FOLDER_DEPTH = 3;
+const folderButton = element<HTMLButtonElement>('folder');
+const directoryPicker = (
+	window as unknown as { showDirectoryPicker?: (options: { mode: 'read' }) => Promise<DirectoryHandle> }
+).showDirectoryPicker;
+folderButton.disabled = !directoryPicker;
+if (!directoryPicker) folderButton.title = t('folderUnavailable');
+async function readFolder(folder: DirectoryHandle, depth = 0): Promise<{ entries: Entry[]; skipped: number }> {
+	const found: Entry[] = [];
+	let skipped = 0;
+	const names: { handle: { kind: string; name: string }; name: string }[] = [];
+	for await (const [name, handle] of folder.entries()) names.push({ handle, name });
+	names.sort((a, b) => a.name.localeCompare(b.name));
+	for (const { handle, name } of names) {
+		if (found.length >= MAX_FOLDER_FILES) break;
+		if (handle.kind === 'directory') {
+			if (depth < MAX_FOLDER_DEPTH) {
+				const inner = await readFolder(handle as unknown as DirectoryHandle, depth + 1);
+				found.push(...inner.entries);
+				skipped += inner.skipped;
+			}
+		} else if (/\.(mid|midi|xmi)$/i.test(name)) {
+			try {
+				const file = await (handle as unknown as { getFile(): Promise<File> }).getFile();
+				if (file.size > MAX_FILE_BYTES) throw new RangeError('file too large');
+				found.push(userEntry('folder', name, readSong(new Uint8Array(await file.arrayBuffer()))));
+			} catch {
+				skipped++;
+			}
+		}
+	}
+	return { entries: found, skipped };
+}
+folderButton.addEventListener(
+	'click',
+	async () => {
+		if (!directoryPicker) return;
+		try {
+			const folder = await directoryPicker.call(window, { mode: 'read' });
+			const { entries, skipped } = await readFolder(folder);
+			if (!entries.length) return say('folderEmpty', { name: folder.name });
+			userEntries = [...entries, ...userEntries.filter((entry) => entry.kind !== 'folder')];
+			buildSongList();
+			songSelect.value = entries[0].key;
+			say('folderLoaded', { count: entries.length, name: folder.name });
+			if (skipped) status.value += t('folderSkipped', { skipped });
+		} catch (error) {
+			if ((error as Error).name !== 'AbortError') say('folderFail', { error: String(error) });
+		}
 	},
 	options,
 );
@@ -472,7 +574,67 @@ const recButtons = {
 	play: element<HTMLButtonElement>('recPlay'),
 	download: element<HTMLButtonElement>('recDownload'),
 	clear: element<HTMLButtonElement>('recClear'),
+	export: element<HTMLButtonElement>('recExport'),
 };
+let exporting = false;
+const recFormat = element<HTMLSelectElement>('recFormat');
+// Opus needs WebCodecs: the option is greyed out where the browser cannot encode it
+void isOpusEncodingAvailable().then((available) => {
+	const option = recFormat.querySelector<HTMLOptionElement>('option[value="opus"]')!;
+	option.disabled = !available;
+	option.title = available ? '' : t('recOpusMissing');
+	if (!available && recFormat.value === 'opus') recFormat.value = 'flac';
+});
+const formatSize = (bytes: number): string =>
+	bytes < 1024 * 1024 ? `${Math.round(bytes / 1024)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+/** a copy of the live instrument for an offline render: same model, same settings, and no disturbing the live notes */
+function offlineVoice(rate: number): Instrument {
+	const key = element<HTMLSelectElement>('recVoice').value === 'standard' ? 'simple:Piano' : instrument.info.id;
+	const copy = instrumentCatalogue.find((definition) => definition.info.id === key)!.create({ sampleRate: rate });
+	if (key === instrument.info.id)
+		for (const { id, get } of instrument.controls.map((control) => ({ id: control.id, get: () => control.get() })))
+			(
+				copy.controls.find((control) => control.id === id) as { set(value: number | boolean): void } | undefined
+			)?.set(get());
+	return copy;
+}
+/** render the take offline through the chosen voice and download it as FLAC, Opus or WAV */
+async function exportTake(): Promise<void> {
+	if (!take.length || exporting) return;
+	const kind = recFormat.value as AudioFormat;
+	exporting = true;
+	paintRecorder();
+	say('recExporting', { format: kind.toUpperCase() });
+	try {
+		const rate = context?.sampleRate ?? 44100;
+		const duration = take[take.length - 1].time;
+		const voice = offlineVoice(rate);
+		const player = new MidiPlayer({ events: take, duration }, { sampleRate: rate }, new InstrumentMidiSink(voice));
+		const rendered = renderPlayer(player, { maxSeconds: duration + 2, fadeOut: 0.05 });
+		const blob = await exportAudioBlob(rendered, kind, {
+			tags: { TITLE: 'mwg-retro-audio recording', COMMENT: voice.info.name },
+		});
+		const stamp = new Date().toISOString().slice(0, 16).replace(/[-:]/g, '').replace('T', '-');
+		saveBlob(blob, `mwg-recording-${stamp}.${AUDIO_FORMATS[kind].extension}`);
+	} catch (error) {
+		say('recExportFail', { error: String(error) });
+	} finally {
+		exporting = false;
+		paintRecorder();
+	}
+}
+/** hand a blob to the browser as a download */
+function saveBlob(blob: Blob, name: string): void {
+	const url = URL.createObjectURL(blob);
+	const link = document.createElement('a');
+	link.href = url;
+	link.download = name;
+	document.body.append(link);
+	link.click();
+	link.remove();
+	setTimeout(() => URL.revokeObjectURL(url), 10_000);
+	say('recExported', { name, size: formatSize(blob.size) });
+}
 const noteCount = (events: readonly MidiEvent[]): number =>
 	events.filter((event) => event.status === 0x90 && event.data2 > 0).length;
 /** keep a message played now while a take is being recorded */
@@ -484,8 +646,8 @@ function recordMessage(status: number, data1: number, data2: number): void {
 function paintRecorder(): void {
 	recButtons.start.disabled = !!recording;
 	recButtons.stop.disabled = !recording;
-	for (const button of [recButtons.play, recButtons.download, recButtons.clear])
-		button.disabled = !!recording || take.length === 0;
+	for (const button of [recButtons.play, recButtons.download, recButtons.clear, recButtons.export])
+		button.disabled = !!recording || take.length === 0 || (button === recButtons.export && exporting);
 	const duration = take.length ? take[take.length - 1].time : 0;
 	element('recStatus').textContent = recording
 		? t('recRecording', { notes: noteCount(recording.events) })
@@ -528,28 +690,26 @@ function finishRecording(): void {
 /** the take replays through the song player: same sound, same model switching to compare */
 async function replayTake(): Promise<void> {
 	if (!take.length) return;
-	customSong = { song: { events: take, duration: take[take.length - 1].time }, title: t('recSong') };
+	takeEntry = {
+		key: 'take',
+		kind: 'take',
+		title: () => t('recSong'),
+		song: () => ({ events: take, duration: take[take.length - 1].time }),
+	};
 	buildSongList();
-	await playSong(-1);
+	await playSong('take');
 }
 function downloadTake(): void {
 	if (!take.length) return;
 	const stamp = new Date().toISOString().slice(0, 16).replace(/[-:]/g, '').replace('T', '-');
 	const name = `mwg-recording-${stamp}.mid`;
-	const url = URL.createObjectURL(new Blob([writeSmf(take, { title: 'mwg-retro-audio' })], { type: 'audio/midi' }));
-	const link = document.createElement('a');
-	link.href = url;
-	link.download = name;
-	document.body.append(link);
-	link.click();
-	link.remove();
-	setTimeout(() => URL.revokeObjectURL(url), 10_000);
-	say('recSaved', { name });
+	saveBlob(new Blob([writeSmf(take, { title: 'mwg-retro-audio' })], { type: 'audio/midi' }), name);
 }
 recButtons.start.addEventListener('click', () => void startRecording(), options);
 recButtons.stop.addEventListener('click', finishRecording, options);
 recButtons.play.addEventListener('click', () => void replayTake(), options);
 recButtons.download.addEventListener('click', downloadTake, options);
+recButtons.export.addEventListener('click', () => void exportTake(), options);
 recButtons.clear.addEventListener(
 	'click',
 	() => {

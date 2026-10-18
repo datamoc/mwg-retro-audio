@@ -135,17 +135,32 @@ Validé par `tools/piano-check.mjs` avec le MIDI simulé.
   d'ordinateur survit au changement de modèle, et les notes coupées par ce changement
   sont relâchées dans la prise (elles restaient suspendues auparavant). Vérifié par
   `tools/piano-check.mjs`.
-- [ ] Rejouer la prise vers une sortie standard et l'enregistrer en fichier : en plus
+- [x] Rejouer la prise vers une sortie standard et l'enregistrer en fichier : en plus
   du modèle choisi, proposer une voix de rechange « standard » (un profil simple)
   pour comparer la prise à une synthèse générique ; rendre la prise hors ligne
   (`renderPlayer` sur `MidiPlayer` + `InstrumentMidiSink`) puis l'exporter en FLAC ou
   Opus par `exportAudio` — Opus exige WebCodecs, griser le bouton d'après
   `isOpusEncodingAvailable()`.
-- [ ] Choisir un répertoire de son ordinateur (ou un disque monté, ou une autre
+  Livré : sélecteur « Voix » (modèle choisi ou piano simple standard) pour la
+  réécoute et l'export ; « Exporter l'audio » rend la prise hors ligne
+  (`MidiPlayer` + `InstrumentMidiSink` + `renderPlayer`, sur une copie de
+  l'instrument qui garde ses réglages) puis l'encode en FLAC, Opus ou WAV par
+  `exportAudioBlob` ; l'option Opus est grisée quand `isOpusEncodingAvailable()` est
+  faux. `tests/take-export.test.ts` décode le FLAC (MD5 vérifié) ; `piano-check`
+  vérifie les trois fichiers téléchargés dans Chrome 155.
+- [x] Choisir un répertoire de son ordinateur (ou un disque monté, ou une autre
   source) et y lire les MIDI : sélecteur de dossier (`showDirectoryPicker`, Chrome et
   Edge ; repli sur le sélecteur de fichier actuel ailleurs), parcours des `.mid` et
   `.xmi` du dossier, titre repris de l'en-tête du fichier, liste intégrée au
   sélecteur de morceaux, refus ou absence de l'API sans bloquer le reste de l'exemple.
+  Livré : la liste de morceaux est désormais une vraie liste d'entrées (morceaux de la
+  page, fichiers, dossier, prise — la prise n'écrase plus le fichier ouvert) ; le
+  bouton « Dossier de MIDI… » parcourt le dossier et ses sous-dossiers (3 niveaux, 500
+  fichiers, 8 Mo par fichier au plus), titre pris dans l'en-tête sinon le nom du
+  fichier, fichiers illisibles comptés et ignorés ; hors Chrome et Edge le bouton est
+  grisé et le sélecteur de fichiers accepte plusieurs `.mid`/`.xmi`. **Simulé** : le
+  sélecteur de dossier est une fausse API dans `piano-check` (liste, abandon, refus,
+  absence) ; aucun vrai dossier ni disque monté n'a été essayé.
 
 ### 6. Moteurs MIDI pour tous les modèles, banques SoundFont, microKORG
 

@@ -95,6 +95,17 @@ déconnexion du clavier ; « Effacer » la supprime. Elle n'est conservée qu'en
 de la page. Validé par `tools/piano-check.mjs` avec le MIDI simulé ; aucun clavier
 physique n'a encore été essayé.
 
+## Voix standard, export audio, dossier de MIDI
+
+- « Voix » choisit le son de la réécoute et de l'export : le modèle choisi, ou un piano
+  simple (« standard ») pour comparer la prise à une synthèse générique.
+- « Exporter l'audio » rend la prise hors ligne et la télécharge en FLAC, Opus ou WAV.
+  Opus demande WebCodecs (Chrome, Edge) : l'option est grisée ailleurs.
+- « Dossier de MIDI… » (Chrome et Edge, `showDirectoryPicker`) liste les `.mid`, `.midi`
+  et `.xmi` d'un dossier de l'ordinateur ou d'un disque monté ; ailleurs, « Votre
+  fichier .mid » accepte plusieurs fichiers. Essayé seulement avec une fausse API de
+  sélecteur de dossier.
+
 ## Page autonome
 
 `npm run build:demo` génère `examples/piano/synth-demo.html` : un seul fichier

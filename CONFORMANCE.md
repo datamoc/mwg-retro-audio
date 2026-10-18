@@ -39,6 +39,15 @@ vérifiés sans erreur console — 0 problème le 17 octobre 2026
 injectée dans la page : aucun clavier MIDI physique n'a encore été essayé, et
 cette validation n'est pas une comparaison à l'oreille.
 
+Le studio d'enregistrement de la démo (prise au clavier MIDI, à la souris ou au clavier
+d'ordinateur, réécoute, export `.mid`, rendu hors ligne en FLAC, Opus ou WAV, dossier de
+MIDI) est vérifié par `piano-check` dans Chrome 155 : MIDI et sélecteur de dossier
+**simulés** (fausses API), fichiers téléchargés contrôlés (`MThd`, `fLaC`, `OggS`,
+`RIFF`). `InstrumentMidiSink` joue un MIDI sur un instrument en fusionnant les canaux,
+sans percussions, et élague les voix à la polyphonie du modèle (mélodie et basse
+gardées) : c'est un arrangement, pas une transcription fidèle. Aucun clavier MIDI
+physique, aucun vrai dossier ni disque monté n'ont été essayés.
+
 `npm run check:bundles` compile et mesure les applications consommatrices
 (profil simple seul, puce seule, catalogue complet) et refuse les modules et
 tables non sélectionnés ; mesures et imports recommandés dans

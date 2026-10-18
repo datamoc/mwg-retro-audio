@@ -36,7 +36,7 @@
 		{
 			"id": "ym2203",
 			"name": "Yamaha YM2203 (OPN) — NEC PC-8801, NEC PC-9801 (carte 26K)",
-			"peak": 0.0963,
+			"peak": 0.0999,
 			"controls": 6
 		},
 		{
@@ -210,7 +210,7 @@
 		{
 			"id": "la-synth",
 			"name": "Structure LA",
-			"peak": 0.0565,
+			"peak": 0.0555,
 			"controls": 5
 		},
 		{
@@ -228,7 +228,7 @@
 		{
 			"id": "simple:Piano",
 			"name": "Piano",
-			"peak": 0.021,
+			"peak": 0.0219,
 			"controls": 1
 		},
 		{
@@ -246,7 +246,7 @@
 		{
 			"id": "simple:Guitar",
 			"name": "Guitar",
-			"peak": 0.0097,
+			"peak": 0.0099,
 			"controls": 1
 		},
 		{

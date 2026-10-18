@@ -115,7 +115,7 @@ function record(scope, message) {
 	problems.push(`${scope}: ${message}`);
 	console.error(`FAIL ${scope}: ${message}`);
 }
-async function newPage(midiMode = 'ok') {
+async function newPage(midiMode = 'ok', extra = null) {
 	const page = await browser.newPage();
 	page.on('console', (message) => {
 		if (message.type() === 'error') errors.push(`console ${message.text()}`);
@@ -131,6 +131,7 @@ async function newPage(midiMode = 'ok') {
 	await page.addInitScript((mode) => {
 		window.__midi.mode = mode;
 	}, midiMode);
+	if (extra) await page.addInitScript(extra.script, extra.arg);
 	await page.goto(url);
 	return page;
 }
@@ -256,7 +257,98 @@ await typed.click('#recPlay');
 await typed.waitForTimeout(200);
 if (!(await typed.evaluate(() => document.getElementById('clock').textContent)).includes('Yamaha YM2149'))
 	record('recorder', 'the take did not replay on the model chosen afterwards');
+// voix standard et export audio hors ligne : FLAC, Opus (si le navigateur sait l'encoder), WAV
+await typed.selectOption('#recVoice', 'standard');
+await typed.click('#recPlay');
+await typed.waitForTimeout(200);
+if (!(await typed.evaluate(() => document.getElementById('clock').textContent)).includes('Piano'))
+	record('recorder', 'the take did not replay on the standard voice');
+await typed.click('#stop');
+for (const [format, magic, extension] of [
+	['flac', 'fLaC', '.flac'],
+	['wav', 'RIFF', '.wav'],
+]) {
+	await typed.selectOption('#recFormat', format);
+	const [audio] = await Promise.all([typed.waitForEvent('download'), typed.click('#recExport')]);
+	const head = (await readFile(await audio.path())).subarray(0, 4).toString('latin1');
+	if (head !== magic || !audio.suggestedFilename().endsWith(extension))
+		record('recorder', `${format} export: ${head} ${audio.suggestedFilename()}`);
+}
+const opusUsable = await typed.evaluate(() => typeof AudioEncoder !== 'undefined');
+const opusEnabled = await typed.evaluate(() => !document.querySelector('#recFormat option[value="opus"]').disabled);
+if (opusUsable !== opusEnabled) record('recorder', `Opus option enabled=${opusEnabled} but WebCodecs=${opusUsable}`);
+if (opusEnabled) {
+	await typed.selectOption('#recFormat', 'opus');
+	const [opus] = await Promise.all([typed.waitForEvent('download', { timeout: 60000 }), typed.click('#recExport')]);
+	const head = (await readFile(await opus.path())).subarray(0, 4).toString('latin1');
+	if (head !== 'OggS' || !opus.suggestedFilename().endsWith('.opus')) record('recorder', `opus export: ${head}`);
+}
 await typed.close();
+
+// dossier de MIDI : sélecteur de dossier simulé (liste triée, titre de l'en-tête, sous-dossier, fichiers refusés)
+const folderMock = {
+	script: (mode) => {
+		const smf = (title) => {
+			const name = [...title].map((c) => c.charCodeAt(0));
+			const track = [0, 0xff, 3, name.length, ...name, 0, 0x90, 60, 100, 0x60, 0x80, 60, 0, 0, 0xff, 0x2f, 0];
+			return new Uint8Array([0x4d, 0x54, 0x68, 0x64, 0, 0, 0, 6, 0, 0, 0, 1, 1, 0xe0, 0x4d, 0x54, 0x72, 0x6b, 0, 0, 0, track.length, ...track]);
+		};
+		const file = (name, data) => ({ kind: 'file', name, getFile: async () => new File([data], name) });
+		const dir = (name, children) => ({
+			kind: 'directory',
+			name,
+			entries: async function* () {
+				for (const child of children) yield [child.name, child];
+			},
+		});
+		if (mode === 'absent') {
+			window.showDirectoryPicker = undefined;
+			return;
+		}
+		window.showDirectoryPicker = async () => {
+			if (mode === 'abort') throw new DOMException('closed', 'AbortError');
+			if (mode === 'deny') throw new DOMException('refused', 'NotAllowedError');
+			return dir('Mes MIDI', [
+				file('zeta.mid', smf('Zeta tune')),
+				file('alpha.mid', smf('Track 1')),
+				file('broken.mid', new Uint8Array([1, 2, 3])),
+				file('notes.txt', new Uint8Array([65])),
+				dir('sous', [file('deep.mid', smf('Deep tune'))]),
+			]);
+		};
+	},
+	arg: 'ok',
+};
+const folderPage = await newPage('ok', folderMock);
+await enableSound(folderPage);
+await folderPage.click('#folder');
+await folderPage.waitForFunction(() => document.querySelectorAll('#song option').length > 8);
+const listedSongs = await folderPage.evaluate(() => Array.from(document.querySelectorAll('#song option')).map((o) => o.textContent));
+if (listedSongs.slice(0, 3).join('|') !== 'alpha|Deep tune|Zeta tune') record('folder', `list: ${listedSongs.slice(0, 4)}`);
+if (listedSongs.some((title) => /broken|notes/.test(title))) record('folder', 'an unreadable or foreign file was listed');
+const folderStatus = await folderPage.evaluate(() => document.getElementById('status').value);
+if (!/3 morceaux/.test(folderStatus) || !/1 fichiers ignorés/.test(folderStatus)) record('folder', `status: ${folderStatus}`);
+await folderPage.selectOption('#song', { label: 'Zeta tune' });
+await folderPage.waitForTimeout(200);
+if (!(await folderPage.evaluate(() => document.getElementById('clock').textContent)).includes('Zeta tune'))
+	record('folder', 'a song of the folder did not play');
+await folderPage.close();
+for (const [mode, check] of [
+	['abort', (text, disabled) => !/inaccessible/.test(text) && !disabled],
+	['deny', (text, disabled) => /Dossier inaccessible/.test(text) && !disabled],
+	['absent', (_text, disabled) => disabled],
+]) {
+	const fallback = await newPage('ok', { script: folderMock.script, arg: mode });
+	await enableSound(fallback);
+	if (mode !== 'absent') await fallback.click('#folder');
+	await fallback.waitForTimeout(150);
+	const text = await fallback.evaluate(() => document.getElementById('status').value);
+	const disabled = await fallback.evaluate(() => document.getElementById('folder').disabled);
+	if (!check(text, disabled)) record(`folder-${mode}`, `status "${text}", disabled ${disabled}`);
+	const { press, release } = keyboard(fallback);
+	if ((await levelWhileHeld(fallback, press, release, 500)) < 0.001) record(`folder-${mode}`, 'keyboard became unplayable');
+	await fallback.close();
+}
 
 // point 4 : MIDI simulé — note-on/off, vélocité, sustain, all-notes-off, déconnexion
 const midiPage = await newPage();
