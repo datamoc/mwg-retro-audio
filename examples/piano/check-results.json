@@ -18,7 +18,7 @@
 		{
 			"id": "tandy",
 			"name": "Tandy SN76489 — Tandy 1000, IBM PCjr",
-			"peak": 0.1271,
+			"peak": 0.1611,
 			"controls": 7
 		},
 		{
@@ -30,7 +30,7 @@
 		{
 			"id": "sid-8580",
 			"name": "MOS 8580 SID — Commodore 64 (révision tardive), Commodore 128",
-			"peak": 0.1952,
+			"peak": 0.2012,
 			"controls": 9
 		},
 		{
@@ -102,7 +102,7 @@
 		{
 			"id": "mmc5",
 			"name": "Nintendo MMC5 — NES / Famicom (cartouche MMC5)",
-			"peak": 0.0459,
+			"peak": 0.0736,
 			"controls": 8
 		},
 		{
@@ -114,7 +114,7 @@
 		{
 			"id": "namco163",
 			"name": "Namco 163 — Famicom (cartouche Namco)",
-			"peak": 0.1416,
+			"peak": 0.1002,
 			"controls": 8
 		},
 		{
@@ -150,13 +150,13 @@
 		{
 			"id": "sound-blaster",
 			"name": "Sound Blaster (OPL2) — PC (Sound Blaster 1.x / 2.0)",
-			"peak": 0.1165,
+			"peak": 0.1191,
 			"controls": 6
 		},
 		{
 			"id": "cms",
 			"name": "C/MS Game Blaster — PC (Game Blaster)",
-			"peak": 0.0607,
+			"peak": 0.06,
 			"controls": 8
 		},
 		{
@@ -168,7 +168,7 @@
 		{
 			"id": "d50",
 			"name": "Roland D-50",
-			"peak": 0.1453,
+			"peak": 0.15,
 			"controls": 16
 		},
 		{
@@ -216,19 +216,19 @@
 		{
 			"id": "synclavier",
 			"name": "Synclavier",
-			"peak": 0.0934,
+			"peak": 0.0918,
 			"controls": 6
 		},
 		{
 			"id": "la-synth",
 			"name": "Structure LA",
-			"peak": 0.0578,
+			"peak": 0.056,
 			"controls": 5
 		},
 		{
 			"id": "ai-synth",
 			"name": "Structure AI",
-			"peak": 0.0544,
+			"peak": 0.0542,
 			"controls": 5
 		},
 		{
@@ -240,13 +240,13 @@
 		{
 			"id": "simple:Piano",
 			"name": "Piano",
-			"peak": 0.0206,
+			"peak": 0.0199,
 			"controls": 1
 		},
 		{
 			"id": "simple:Electric piano",
 			"name": "Electric piano",
-			"peak": 0.0106,
+			"peak": 0.0105,
 			"controls": 1
 		},
 		{
@@ -264,7 +264,7 @@
 		{
 			"id": "simple:Bass",
 			"name": "Bass",
-			"peak": 0.0117,
+			"peak": 0.0115,
 			"controls": 1
 		},
 		{

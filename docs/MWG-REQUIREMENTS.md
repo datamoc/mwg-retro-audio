@@ -15,6 +15,9 @@ SoundFont 3** (échantillons Vorbis, Opus ou FLAC — `loadSoundFont`, `webAudio
 `mwg-soundfonts convert`) : les banques SF3 s'ouvrent donc côté mwg, ce paquet restant SoundFont 2 par
 conception.
 Ce document reste donc la référence de cadrage ; les sections encore ouvertes sont signalées ci-dessous.
+**Mise à jour du 18 octobre 2026 : la section 11 recense ce que mwg a ajouté depuis 0.46.0, en premier les cœurs
+empaquetés pour l'hôte hors fil principal (`factorySource`, 11.1), que ce paquet doit fournir, et un défaut de
+`reset()` que ce test a révélé.**
 
 Côté paquet, les adaptateurs qui consomment ces contrats vivent dans `src/mwg/` (sous-chemin `@datamoc/mwg-retro-audio/mwg`) :
 
@@ -373,3 +376,186 @@ Dans l'esprit de `mwg-smoke`, `mwg-size`, `mwg-i18n`, `mwg-bench` :
    refusé à la construction ? Le paquet le joue avec une onde de remplacement ; la décision de politique est à mwg.
 7. Les verdicts d'écoute sont-ils des données du dépôt de mwg (versionnées, rejouables) ou un journal local de
    chaque auteur ? Le premier cas permet une régression perceptive, le second évite d'alourdir le dépôt.
+
+Réponses de mwg (octobre 2026, section 11) : **6** accepté avec un avertissement, jamais refusé (crochet
+`inspectPatch`) ; **7** ni l'un ni l'autre : des lignes de données indexées par l'identité du patch, que
+l'auteur garde où il veut, le dépôt ne tenant que la liste de référence des identités.
+
+## 11. Ce que mwg a ajouté depuis 0.46.0 (non publié) et ce que le paquet peut en tirer
+
+Tout est dans l'arbre de travail de mwg au 18 octobre 2026, non commité ni publié, vérifié par ses tests (plus de 3 300)
+et, pour l'hôte hors fil principal, contre les moteurs de ce paquet. Le plus utile pour ce paquet vient en premier.
+
+### 11.1 Cœurs empaquetés pour l'hôte hors fil principal (`factorySource`) : à fournir par le paquet
+
+**La contrainte.** `AudioCoreHost` (mwg, `@datamoc/mwg/audio`) fait tourner un cœur de synthèse dans un Worker. Un
+Worker ne reçoit que du **texte** : la fabrique du cœur est envoyée par `Function.prototype.toString`, donc elle ne
+peut ni importer ni capturer quoi que ce soit. Les moteurs de ce paquet (`Mt32Synth`, `D50Synth`, `M1Synth`, OPL…)
+ont des imports : ils ne passent pas par `factory`.
+
+**Ce que mwg fournit.** L'option `AudioCoreHostOptions.factorySource` : le texte d'une **expression JavaScript dont la
+valeur est la fabrique** `(sampleRate) => MidiSynth`, avec ses auxiliaires à l'intérieur. Elle sert à l'hôte en
+Worker comme au repli sur le fil principal. Aussi : `host.start(events)` (reset, messages, puis rendu, dans cet
+ordre), `prefetch: false` (voir ci-dessous), `playMidiHosted(file, { factorySource, channel, sampleRate })`,
+`sendMidiToHost`, `reportUnderruns` et `mwg-audio bench`.
+
+**Ce que le paquet devrait exporter** (item 457 de la feuille de route de mwg, en attente de ce paquet) :
+
+- un sous-chemin construit à la compilation, par exemple `@datamoc/mwg-retro-audio/mwg/worker-cores`, avec
+  `retroCoreSource(name: string): string` pour un moteur (`'retro:mt32'`, `'retro:d50'`, `'retro:m1'`, un
+  `retro:<id>` du catalogue…) et la liste `retroCoreNames`. Chaque texte est
+  `(() => { /* code empaqueté */ return (sampleRate) => new Synth(sampleRate); })()`, **sans `import`/`export`, sans
+  `eval`, sans WebAssembly, sans accès au DOM** (un Worker n'en a pas), compatible avec la CSP par défaut de mwg ;
+- un texte par moteur plutôt qu'un seul pour tout le catalogue : mesuré, mt32 + dx7 + d50 + le catalogue
+  d'instruments pèsent **351 Ko** en un script, ce qui est trop pour un jeu qui n'en joue qu'un ;
+- un test dans le paquet qui passe ce texte par l'hôte (recette ci-dessous), pour qu'une dépendance ajoutée à un
+  moteur sans être empaquetée casse la compilation et non le jeu.
+
+**Recette de test (faite à la main côté mwg, sans modifier ce paquet).** Empaqueter les moteurs de `dist/` avec
+l'esbuild de ce paquet, en IIFE pour une plateforme neutre, qui pose un accesseur global :
+
+```js
+// bundle.mjs : entrée = les fabriques de dist/mwg/midiEngines.js (et instrumentEngines.js pour le catalogue)
+const entry = `
+  import { retroMidiEngines } from '<dist>/mwg/midiEngines.js';
+  globalThis.__core = (name) => retroMidiEngines[name];`;
+const out = await build({ stdin: { contents: entry, resolveDir: '<racine>', loader: 'js' },
+  bundle: true, write: false, format: 'iife', platform: 'neutral', target: 'es2020' });
+// la fabrique, sous forme d'expression, est alors :
+const source = `(() => {\n${out.outputFiles[0].text}\nreturn (rate) => globalThis.__core('retro:d50')(rate); })()`;
+```
+
+puis, côté mwg : `new AudioCoreHost({ factorySource: source, sampleRate: 44100, mode: 'worker', prefetch: false })`,
+`sendMidiToHost(host, fichierMidi)` (16 notes tenues), lecture cadencée en temps réel, et comparaison au rendu
+direct `renderMidiThroughSynth(fichierMidi, fabrique(44100), { tail: 0 })`. **Critères d'acceptation** : `stats().mode`
+vaut `'worker'`, zéro sous-dépassement, et la sortie est **identique à l'échantillon près** à celle du rendu direct.
+
+**Résultats de cette recette** (Windows 11, Node 26) : D-50, MT-32, DX7 **bit-identiques** au rendu direct, D-50 16
+voix pendant 30 s sans aucun sous-dépassement alors que le rendu direct seul y consomme 0,96 fois le temps réel
+(l'hôte tient donc ce que le fil principal ne tient pas).
+
+**Un défaut de ce paquet révélé par ce test : `reset()` ne ramène pas le cœur à l'état d'origine.** Quand l'hôte a
+déjà fait rendre une seconde de silence au cœur puis l'a remis à zéro, MT-32 et D-50 divergent d'un rendu neuf dès
+l'échantillon 621 environ (écart efficace de 0,11 pour un signal de 0,25), alors que le DX7 reste identique. La
+cause probable (non vérifiée dans le code du paquet) est un générateur de bruit ou une phase de LFO qui garde sa place
+à travers `reset()` : qu'un patch chargé survive est voulu, mais le générateur pseudo-aléatoire et les phases ne
+devraient pas. Côté mwg c'est contourné (`prefetch: false` : le cœur ne rend rien avant le premier
+morceau), mais **`reset()` devrait restaurer le générateur pseudo-aléatoire et les phases**, sinon deux lectures du
+même morceau ne sont pas identiques, ce qui compte pour une graine déterministe (1.7) et pour un pas verrouillé.
+À corriger avec un test : rendre, `reset()`, rendre à nouveau, comparer.
+
+**Fait côté paquet (18 octobre 2026).** Cause vérifiée dans le code : `D50Synth.reset()` oubliait la phase du chorus
+(`chorusPhase`) et le compteur d'âge des voix, et `Vl1.reset()` la phase et le temps de la voix. Le MT-32 et le LAPC-I
+héritaient du défaut du D-50 (neuf parties D-50). Corrigé, avec `tests/worker-cores.test.ts` : pour **chacun des 48
+moteurs**, rendre du son, `reset()`, rendre à nouveau doit donner exactement la sortie d'un moteur neuf. Le M1 et le
+DX7 n'étaient pas touchés, comme vous l'aviez mesuré.
+
+**Fait côté paquet : cœurs empaquetés.** Sous-chemin `@datamoc/mwg-retro-audio/mwg/worker-cores` (construit par
+`npm run build`, étape `tools/build-worker-cores.mjs`) :
+
+- `retroCoreNames` : les 48 noms (`retro:mt32`, `retro:dx7`, `retro:d50`, `retro:lapc-i` et un `retro:<id>` par modèle) ;
+- `retroCoreSource(name)` : le texte de l'expression `(() => { … return __core.factory; })()`, de valeur
+  `(sampleRate) => MidiSynth`, `undefined` pour un nom inconnu ;
+- un module par moteur, `@datamoc/mwg-retro-audio/mwg/worker-cores/retro-d50` (défaut : le texte), pour n'embarquer que
+  celui-là ; l'index les réunit tous (1,6 Mo au total : à réserver aux outils et aux serveurs).
+
+Chaque texte est empaqueté avec esbuild (IIFE, plateforme neutre, ES2020) à partir de **sa famille de modèles
+seulement** : 7 à 62 Ko par moteur (au lieu de 351 Ko d'un seul script ; le MT-32 et le D-50 pèsent moins de 50 Ko).
+Aucun ne contient `import`/`export`, `eval`, `new Function`, WebAssembly ni accès au DOM : le test le vérifie, et la
+construction échoue si l'un d'eux y revient. Le même test évalue chaque texte comme le fait votre hôte
+(`new Function('return (' + texte + ');')()`) et exige que sa sortie soit **identique à l'échantillon près** à celle du
+moteur direct, pour les 48 moteurs. Je n'ai pas lancé l'hôte en mode Worker lui-même (il vit dans mwg, que je ne
+modifie pas) : à refaire de votre côté avec `retroCoreSource`.
+
+### 11.2 Charge réelle des moteurs (mesurée avec `mwg-audio bench`)
+
+`mwg-audio bench --module <enregistrement> --synth retro:m1 --voices 16 --seconds 600 --rate 44100` enregistre les
+moteurs de ce paquet, tient 16 notes et rapporte la part de temps réel utilisée (1 = exactement le temps réel).
+Mesures sur cette machine (processeur de bureau, Node 26) :
+
+| Moteur | 16 voix tenues | Durée | Part du temps réel |
+| --- | --- | --- | --- |
+| `retro:m1` | 601,5 s d'audio en 108 s | 10 minutes | **0,18** |
+| `retro:m1` | 31,5 s en 9,6 s | 30 s | 0,30 |
+| `retro:d50` | 31,5 s en 44 s | 30 s | **1,41** |
+| `retro:d50` | 601,5 s en 515 s | 10 minutes | **0,86** |
+
+Les chiffres de 1.2 (M1 ≈ 1,4, D-50 ≈ 1,1) ne se retrouvent pas ici : le **M1** en utilise moins d'un cinquième du temps
+réel et le **D-50** entre 0,86 et 1,41 selon la mesure. Les deux mesures du D-50 diffèrent de 60 % : le banc de 30 s
+n'a rien d'autre en parallèle, celui de 10 minutes a tourné pendant que d'autres tâches (tests, navigateurs) occupaient la
+machine, ce qui devrait l'alourdir et non l'alléger ; la cause n'est donc pas établie (échauffement du moteur à l'exécution,
+voix qui s'éteignent, variation de la machine). À refaire sur la machine de référence, plusieurs fois, avant d'affirmer
+un chiffre ; dans les deux cas le D-50 à 16 voix dépasse 0,5, donc le fil principal ne le tient pas avec une marge. Le seuil retenu par mwg : au-delà de 0,5, jouer par
+`playMidiHosted`.
+
+**Mesure du paquet (18 octobre 2026), même méthode, 16 voix tenues pendant 10 s à 44,1 kHz, sans hôte** (autre
+machine de développement, Node 26) : M1 **0,15**, DX7 0,15, D-50 **0,75**, MT-32 (neuf parties D-50) **1,22**, OPL2
+0,34, YM2612 0,18, microKORG 0,04. Cela confirme l'ordre des moteurs : le M1 et le DX7 sont légers, le **D-50 et le
+MT-32 sont ceux à jouer par l'hôte** (le MT-32 dépasse le temps réel dès qu'il tient beaucoup de voix sur plusieurs
+parties). Les chiffres de 1.2 ne doivent plus être cités sans machine de référence.
+
+### 11.3 Export : Opus et enregistrement du bus
+
+Le paquet a déjà `exportAudio`. Côté mwg, `AudioExport` (service) l'accepte comme **encodeur injecté** pour `flac` et
+`opus` (`encoders: { opus: (frames, requête) => octets }`) et s'occupe du reste : formats offerts, contrôle de taille
+avant l'export, étiquettes par défaut, annulation, `inWorker` (si l'encodeur est auto-suffisant, voir 11.1), enregistrement
+du fichier. mwg a aussi ses propres `webCodecsOpusEncoder` et `oggOpus` (conteneur Ogg Opus, décodé sans erreur par
+ffmpeg), donc le paquet n'est pas obligé de fournir Opus ; `AudioBus.record()` (une capture bornée de la sortie du
+bus) alimente l'export de ce que le joueur entend.
+
+**Essais d'Opus dans de vrais navigateurs** (mwg, 2 s de sinus 440 Hz à gauche et 660 Hz à droite, 96 kbit/s demandés) :
+
+- **Chrome 155** : 24,8 Ko, relu par `decodeAudioData` : 2 s, 96 000 échantillons exactement, 440 et 660 Hz ;
+- **Firefox 158** : encode et relit (2 s, 2 canaux) mais le fichier fait **45 Ko** pour la même consigne : Firefox
+  ne tient pas le débit demandé comme Chrome (près de deux fois plus gros). À savoir avant de promettre une taille ;
+- **Safari et les WebViews iOS et Android** : non essayés, faute d'appareils.
+
+### 11.4 Banques de patchs et paquets
+
+- `SyxBank` lit maintenant de façon **tolérante** (`readSyx`, `SyxBank.skipped` : octets avant le premier message,
+  message non terminé, banque DX7 à somme de contrôle fausse, message d'un autre modèle) ;
+- chaque patch a une **identité** `source#message.voix@empreinte` (empreinte FNV-1a 64 bits du contenu), celle que
+  doit tenir une sauvegarde : un nom ne suffit pas (11 680 noms pour 40 490 patchs, mesuré par ce paquet en 2.1) ;
+- un patch DX7 porte `info` (`dx7VoiceInfo` : algorithme, rétroaction, onde du LFO, transposition) ;
+- `SyxBank.audit(synth)` rend une note par patch (chacun choisi par un changement de programme après le chargement de
+  la banque) et signale les silencieux et ceux qui saturent. **Pour le D-50 et le M1 le paquet doit dire comment
+  choisir une voix** : un `MidiSynth` générique ne sait que « bank puis changement de programme » ;
+- `verifyPackage(octets, { shared: true })` et `mwl pack --share` refusent une banque `synth-patch` sans licence ;
+- `verifyPackage(octets, { inspectPatch: (octets, actif) => ({ warnings, errors }) })` : **le paquet peut y brancher son
+  analyseur D-50** pour signaler les patchs qui dépendent d'ondes non rendues (77-100). Décision de mwg (question 6) :
+  un avertissement n'empêche jamais le paquet, une erreur si.
+
+**Fait côté paquet.**
+
+- `inspectD50Patch(octets)` (`@datamoc/mwg-retro-audio/formats`) est l'analyseur à brancher dans `inspectPatch` :
+  il rend `{ warnings, errors }`. Un avertissement unique résume les patchs qui demandent les ondes PCM 77-100
+  (combinaisons des ondes 1-76, jouées ici par une onde de remplacement), avec les cinq premiers noms et leurs
+  numéros d'onde. Un fichier sans message D-50 (une banque DX7, par exemple) ne donne rien ; un fichier illisible
+  donne une erreur. Chaque partiel porte maintenant `substituted` (numéro de l'onde demandée) pour qui veut
+  faire autrement.
+- **Choisir une voix**, par moteur :
+  - `retro:d50` : après une banque `.syx`, le **premier** patch est déjà actif ; un changement de programme *n* joue le
+    patch d'indice *n* modulo le nombre de patchs, **dans l'ordre de `parseD50SysEx`** (la zone temporaire d'abord, si
+    elle est présente, puis les emplacements 1 à 64). Sans banque, le programme choisit l'un des 16 archétypes.
+    Une banque chargée survit à `reset()`, comme la mémoire de l'instrument.
+  - `retro:mt32` et `retro:lapc-i` : un changement de programme (0-127) choisit une famille de huit programmes, comme
+    sur un appareil General MIDI ; les SysEx de timbre sont lus et ignorés.
+  - `retro:dx7` : une banque (`F0 43 … 09 20 00`) charge 32 voix et le changement de programme en choisit une ;
+    une voix seule remplace la voix courante.
+  - **M1 et les autres modèles du catalogue** (`retro:m1`, `retro:ym2612`, …) : le changement de programme et les
+    SysEx sont ignorés, le son d'un modèle est celui de ses réglages (`controls` et `presets` de l'instrument). Pour
+    auditer plusieurs sons d'un M1, créer l'instrument avec `applyPreset(n)` plutôt que par un programme MIDI.
+
+### 11.5 Autre
+
+- `mwg-audio audit --synth <noms> --module <enregistrement>` : notes d'étalonnage sur chaque moteur, avec repli,
+  échec, silence, saturation, décalage continu et hauteur fausse (le partiel le plus fort doit être un harmonique de
+  la note). Un bon contrôle de non-régression pour ce paquet, qui a trouvé cinq défauts à la main (VRC6, NES, MMC5,
+  YM2612, DAC) ;
+- `mwg-audio share make|read` et `core/ShareLink` : lien de partage (état de jeu ou musique) dans le fragment de l'URL,
+  somme de contrôle, lecture bornée ; `mwg/music` : musique de jeu générée et déterministe (`composeMusic`,
+  `composeStates`, limite de voix pour une puce à 3 voix) ; `AdaptiveMusic` avec bascule sur la mesure ;
+  `AudioSettings` branchés à l'écran de réglages ; `generateCredits(…, { support })`.
+
+Réponses aux questions 6 et 7 de la section 10 : voir la fin de cette section 10 ; elles sont décidées côté mwg
+(feuille de route, élément 450).

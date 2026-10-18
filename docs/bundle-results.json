@@ -36,8 +36,8 @@
       ]
     },
     "catalogue": {
-      "bytes": 160363,
-      "gzipBytes": 51152,
+      "bytes": 162039,
+      "gzipBytes": 51757,
       "modules": [
         "dist/chips/Ym2149.js",
         "dist/instruments/controls.js",
@@ -77,6 +77,7 @@
         "dist/chips/AppleII.js",
         "dist/instruments/pc-registers.js",
         "dist/instruments/simple.js",
+        "dist/instruments/simpleCatalogue.js",
         "dist/instruments/catalogue.js",
         "catalogue.ts"
       ]
@@ -97,8 +98,8 @@
       ]
     },
     "mwgCatalogue": {
-      "bytes": 180610,
-      "gzipBytes": 58775,
+      "bytes": 182304,
+      "gzipBytes": 59386,
       "modules": [
         "dist/chips/Ym2149.js",
         "dist/instruments/controls.js",
@@ -138,6 +139,7 @@
         "dist/chips/AppleII.js",
         "dist/instruments/pc-registers.js",
         "dist/instruments/simple.js",
+        "dist/instruments/simpleCatalogue.js",
         "dist/instruments/catalogue.js",
         "dist/instruments/InstrumentMidiSink.js",
         "dist/mwg/instrumentEngines.js",
@@ -169,8 +171,8 @@
       ]
     },
     "business": {
-      "bytes": 132512,
-      "gzipBytes": 41837,
+      "bytes": 132620,
+      "gzipBytes": 41857,
       "modules": [
         "dist/chips/index.js",
         "dist/chips/BoxRenderer.js",

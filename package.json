@@ -35,6 +35,14 @@
 			"types": "./dist/mwg/index.d.ts",
 			"default": "./dist/mwg/index.js"
 		},
+		"./mwg/worker-cores": {
+			"types": "./dist/mwg/worker-cores.d.ts",
+			"default": "./dist/mwg/worker-cores.js"
+		},
+		"./mwg/worker-cores/*": {
+			"types": "./dist/mwg/worker-cores/*.d.ts",
+			"default": "./dist/mwg/worker-cores/*.js"
+		},
 		"./mwg/catalogue": {
 			"types": "./dist/mwg/catalogueEngines.d.ts",
 			"default": "./dist/mwg/catalogueEngines.js"
@@ -77,7 +85,7 @@
 	"scripts": {
 		"check": "tsc --noEmit -p .",
 		"test": "node --import tsx --test \"tests/**/*.test.ts\"",
-		"build": "tsc -p tsconfig.build.json",
+		"build": "tsc -p tsconfig.build.json && node tools/build-worker-cores.mjs",
 		"check:bundles": "npm run build && node tools/bundle-check.mjs",
 		"check:piano": "node tools/piano-check.mjs",
 		"build:demo": "node tools/build-demo.mjs",

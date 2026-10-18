@@ -149,7 +149,7 @@ export class RetroD50Synth implements MidiSynth {
  * `retro:dx7` (FM 6 operators) and `retro:d50` (LA), all playable through mwg's MIDI file
  * renderers once registered.
  */
-export const retroMidiEngines: Readonly<Record<string, MidiSynthFactory>> = Object.freeze({
+export const retroMidiEngines: Readonly<Record<string, MidiSynthFactory>> = /* @__PURE__ */ Object.freeze({
 	'retro:mt32': mt32Engine,
 	'retro:dx7': (sampleRate) => new RetroDx7Synth(sampleRate),
 	'retro:d50': (sampleRate) => new RetroD50Synth(sampleRate),

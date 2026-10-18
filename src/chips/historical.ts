@@ -310,6 +310,8 @@ export class Vl1 extends PolyBase {
 	reset(): void {
 		this.note = -1;
 		this.env = null;
+		this.phase = 0;
+		this.t = 0;
 	}
 
 	/** seconds for a keypad digit: 0 = instantaneous, 9 = about 2 seconds */
@@ -1431,6 +1433,8 @@ export interface D50Partial {
 	attack?: number;
 	/** the user's own PCM source: takes precedence over the synthesized attack bank */
 	pcm?: PcmSource;
+	/** the PCM wave number (77-100, a combination of waves 1-76) this partial asks for and the model plays with a stand-in */
+	substituted?: number;
 	pulseWidth?: number;
 	pwmDepth?: number;
 	pwmRate?: number;
@@ -1801,8 +1805,10 @@ export class D50Synth extends PolyBase {
 
 	reset(): void {
 		this.voices = [];
+		this.age = 0;
 		this.chorusBuf = new Float32Array(8192);
 		this.chorusIdx = 0;
+		this.chorusPhase = 0;
 		this.reverbL = new SimpleReverb(this.sampleRate);
 		this.reverbR = new SimpleReverb(this.sampleRate, 23);
 	}

@@ -1,7 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { D50Synth } from '../src/chips/historical.ts';
-import { D50_PCM_NAMES, MODEL_D50, buildD50Dt1, parseD50SysEx, readD50Memory } from '../src/formats/d50.ts';
+import {
+	D50_PCM_NAMES,
+	MODEL_D50,
+	buildD50Dt1,
+	inspectD50Patch,
+	parseD50SysEx,
+	readD50Memory,
+} from '../src/formats/d50.ts';
 import { D50_WAVE_ATTACKS, D50_WAVE_LOOPS } from '../src/chips/d50Waves.ts';
 import { frequency, renderMono, rms, RATE } from './util.ts';
 
@@ -317,4 +324,29 @@ test('D-50 SysEx: the published end points of the time, LFO and chorus laws, and
 	)[0].patch.tones[0];
 	assert.equal(pcm.partials[0].bypassFilter, true);
 	assert.equal(pcm.partials[1].bypassFilter, undefined);
+});
+
+test('D-50 SysEx: inspectD50Patch warns about the combination waves 77-100 and stays silent otherwise', () => {
+	const PCM_PCM = { 0x0a: 5 }; // structure 6: both partials are PCM
+	const withWave = (wave: number): Uint8Array =>
+		dump(MEM1, [
+			partial({ 0x07: wave }),
+			partial({ 0x07: 10 }),
+			common('Combo', PCM_PCM),
+			partial(),
+			partial(),
+			common('Lower'),
+			patchBlock('Combo Patch'),
+		]);
+	const clean = inspectD50Patch(withWave(30));
+	assert.deepEqual(clean, { warnings: [], errors: [] });
+	const combo = inspectD50Patch(withWave(79));
+	assert.deepEqual(combo.errors, []);
+	assert.equal(combo.warnings.length, 1);
+	assert.match(combo.warnings[0], /1 of 1 D-50 patches use PCM waves 77-100.*Combo Patch \(wave 80\)/);
+	assert.deepEqual(
+		inspectD50Patch(new Uint8Array([0xf0, 0x43, 0xf7])),
+		{ warnings: [], errors: [] },
+		'not D-50 data',
+	);
 });

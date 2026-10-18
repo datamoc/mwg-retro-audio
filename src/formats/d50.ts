@@ -249,6 +249,7 @@ function partialOf(
 			p.cutoff = 3000;
 			p.filterDepth = 0;
 			delete p.filterKeyFollow;
+			p.substituted = wave + 1;
 		} else p.bypassFilter = true; // the TVF applies to synthesised partials only (Creative Book, table 4)
 	} else if (read(0x06) === 0) {
 		p.wave = 'square';
@@ -355,4 +356,36 @@ export function parseD50SysEx(bytes: Uint8Array): D50SysExPatch[] {
 		});
 	}
 	return out;
+}
+
+/**
+ * What a D-50 `.syx` holds that the model does not play as stored, for a package verifier (mwg's
+ * `verifyPackage(…, { inspectPatch })`): patches that ask for the PCM waves 77-100, combinations of waves 1-76 whose
+ * pairing is in the control ROM, are played with a stand-in. That is a warning, never an error: the patch still plays.
+ * A file with no D-50 message gives no finding (the bytes may be another instrument's bank); an unreadable one, an error.
+ */
+export function inspectD50Patch(bytes: Uint8Array): { warnings: string[]; errors: string[] } {
+	const found = { warnings: [] as string[], errors: [] as string[] };
+	let patches: D50SysExPatch[];
+	try {
+		patches = parseD50SysEx(bytes);
+	} catch (error) {
+		found.errors.push(`unreadable D-50 SysEx: ${(error as Error).message}`);
+		return found;
+	}
+	const affected = patches.flatMap((p) => {
+		const waves = new Set(
+			p.patch.tones.flatMap((tone) =>
+				tone.partials.flatMap((part) => (part.substituted ? [part.substituted] : [])),
+			),
+		);
+		return waves.size
+			? [`${p.name.trim() || `slot ${p.slot ?? '?'}`} (wave ${[...waves].sort((a, b) => a - b).join(', ')})`]
+			: [];
+	});
+	if (affected.length)
+		found.warnings.push(
+			`${affected.length} of ${patches.length} D-50 patches use PCM waves 77-100, played here with a stand-in wave: ${affected.slice(0, 5).join('; ')}${affected.length > 5 ? '; …' : ''}`,
+		);
+	return found;
 }
