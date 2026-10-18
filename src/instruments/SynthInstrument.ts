@@ -94,6 +94,8 @@ export function definition<T extends NoteChip>(
 	polyphony: number,
 	create: (options: InstrumentOptions) => T,
 	configure: (instrument: SynthInstrument<T>) => void,
+	/** what differs from the common description: another family, a description of its own */
+	extra: Partial<InstrumentInfo> = {},
 ): InstrumentDef {
 	const info: InstrumentInfo = {
 		id,
@@ -103,6 +105,7 @@ export function definition<T extends NoteChip>(
 		family: 'synth',
 		description:
 			'Modèle de synthèse sans ROM. Les réglages modifient le moteur choisi ; les presets sont des reconstructions. Pitch bend continu non pris en charge par cet adaptateur.',
+		...extra,
 	};
 	return { info, create: (options) => new SynthInstrument(info, create(options), configure, options) };
 }

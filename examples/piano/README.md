@@ -22,13 +22,13 @@ et les écouteurs.
 
 ## Catalogue
 
-47 modèles jouables, issus du catalogue explicite `src/instruments/catalogue.ts`:
+48 modèles jouables, issus du catalogue explicite `src/instruments/catalogue.ts`:
 
 - neuf profils simples (piano, piano électrique, orgue, guitare, basse, cordes,
   cuivres, flûte, synthé) ;
 - YM2149 et AY-3-8910 ;
 - D-50, M1, microKORG, GS-1, VL-1, DX7, synthèse additive Bell Labs et Dartmouth,
-  Synclavier, structures LA/AI, MT-32 ;
+  Synclavier, structures LA/AI, MT-32 et sa carte PC Roland LAPC-I ;
 - SN76489 et Tandy, MOS 6581 et 8580 (SID), APU NES NTSC et PAL, VRC6, MMC5,
   Sunsoft 5B, Namco 163 et Famicom Disk System ;
 - OPL2, OPL3 et Sound Blaster, YM2612, YM2203, YM2608 et YM2151 ;
@@ -47,7 +47,7 @@ réglages, la déconnexion MIDI, le refus et l’absence de Web MIDI et la libé
 du contexte à la fermeture sont vérifiés. Résultat détaillé :
 `check-results.json` dans ce dossier.
 
-Du 18 octobre 2026 : 47 modèles, 0 problème, sans erreur console (46 modèles le 17 octobre, avant le microKORG).
+Du 18 octobre 2026 : 48 modèles, 0 problème, sans erreur console (46 modèles le 17 octobre, avant le microKORG).
 
 Le MIDI est simulé par une fausse API Web MIDI injectée dans la page : les
 messages note-on/off, vélocité, sustain et all-notes-off sont bien exercés côté
@@ -97,10 +97,14 @@ physique n'a encore été essayé.
 
 ## Voix standard, export audio, dossier de MIDI
 
-- « Voix » choisit le son de la réécoute et de l'export : le modèle choisi, ou un piano
-  simple (« standard ») pour comparer la prise à une synthèse générique.
-- « Exporter l'audio » rend la prise hors ligne et la télécharge en FLAC, Opus ou WAV.
-  Opus demande WebCodecs (Chrome, Edge) : l'option est grisée ailleurs.
+- « Voix du morceau » (panneau de lecture) choisit le son de tous les morceaux, prise
+  comprise : le modèle choisi, ou un piano simple (« standard ») pour comparer à une
+  synthèse générique.
+- Le panneau « Export audio du morceau courant » est séparé de l'enregistrement : il
+  rend hors ligne le morceau sélectionné dans la liste (morceau livré, fichier, dossier
+  ou dernière prise), avec la voix choisie, et le télécharge en FLAC, Opus ou WAV, avec une
+  barre de progression (`renderPlayerAsync`, qui rend la main au navigateur). Opus demande
+  WebCodecs (Chrome, Edge) : l'option est grisée ailleurs.
 - « Dossier de MIDI… » (Chrome et Edge, `showDirectoryPicker`) liste les `.mid`, `.midi`
   et `.xmi` d'un dossier de l'ordinateur ou d'un disque monté ; ailleurs, « Votre
   fichier .mid » accepte plusieurs fichiers. Essayé seulement avec une fausse API de

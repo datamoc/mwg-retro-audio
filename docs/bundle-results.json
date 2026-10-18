@@ -36,8 +36,8 @@
       ]
     },
     "catalogue": {
-      "bytes": 160009,
-      "gzipBytes": 50972,
+      "bytes": 160363,
+      "gzipBytes": 51152,
       "modules": [
         "dist/chips/Ym2149.js",
         "dist/instruments/controls.js",
@@ -97,8 +97,8 @@
       ]
     },
     "mwgCatalogue": {
-      "bytes": 180224,
-      "gzipBytes": 58586,
+      "bytes": 180610,
+      "gzipBytes": 58775,
       "modules": [
         "dist/chips/Ym2149.js",
         "dist/instruments/controls.js",

@@ -1,7 +1,7 @@
 {
 	"browser": "chrome headless 155.0.8059.85 (playwright-core 1.64.1)",
 	"date": "2026-10-18",
-	"models": 47,
+	"models": 48,
 	"peaks": [
 		{
 			"id": "ym2149",
@@ -18,7 +18,7 @@
 		{
 			"id": "tandy",
 			"name": "Tandy SN76489 — Tandy 1000, IBM PCjr",
-			"peak": 0.1271,
+			"peak": 0.1191,
 			"controls": 7
 		},
 		{
@@ -66,7 +66,7 @@
 		{
 			"id": "mockingboard",
 			"name": "Mockingboard — Apple II (carte Mockingboard)",
-			"peak": 0.0806,
+			"peak": 0.3,
 			"controls": 7
 		},
 		{
@@ -114,7 +114,7 @@
 		{
 			"id": "namco163",
 			"name": "Namco 163 — Famicom (cartouche Namco)",
-			"peak": 0.1002,
+			"peak": 0.1416,
 			"controls": 8
 		},
 		{
@@ -128,6 +128,12 @@
 			"name": "Yamaha YM2612 (Mega Drive) — FM Towns, Mega Drive / Genesis",
 			"peak": 0.0963,
 			"controls": 6
+		},
+		{
+			"id": "lapc-i",
+			"name": "Roland LAPC-I — PC (LAPC-I, MPU-401)",
+			"peak": 0.0564,
+			"controls": 1
 		},
 		{
 			"id": "opl2",
@@ -144,7 +150,7 @@
 		{
 			"id": "sound-blaster",
 			"name": "Sound Blaster (OPL2) — PC (Sound Blaster 1.x / 2.0)",
-			"peak": 0.1165,
+			"peak": 0.1191,
 			"controls": 6
 		},
 		{
@@ -174,7 +180,7 @@
 		{
 			"id": "gs1",
 			"name": "Yamaha GS-1",
-			"peak": 0.0706,
+			"peak": 0.0667,
 			"controls": 5
 		},
 		{
@@ -210,13 +216,13 @@
 		{
 			"id": "synclavier",
 			"name": "Synclavier",
-			"peak": 0.091,
+			"peak": 0.0947,
 			"controls": 6
 		},
 		{
 			"id": "la-synth",
 			"name": "Structure LA",
-			"peak": 0.0553,
+			"peak": 0.057,
 			"controls": 5
 		},
 		{
@@ -234,7 +240,7 @@
 		{
 			"id": "simple:Piano",
 			"name": "Piano",
-			"peak": 0.0204,
+			"peak": 0.0206,
 			"controls": 1
 		},
 		{
@@ -258,7 +264,7 @@
 		{
 			"id": "simple:Bass",
 			"name": "Bass",
-			"peak": 0.0117,
+			"peak": 0.0113,
 			"controls": 1
 		},
 		{
@@ -282,7 +288,7 @@
 		{
 			"id": "simple:Synth",
 			"name": "Synth",
-			"peak": 0.008,
+			"peak": 0.0083,
 			"controls": 1
 		}
 	],

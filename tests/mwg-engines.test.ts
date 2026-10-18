@@ -54,7 +54,7 @@ test('every model of the catalogue is a named MIDI engine, the dedicated three k
 		assert(instrumentEngineName(definition.info.id) in retroCatalogueMidiEngines);
 	assert(names.includes('retro:ym2149') && names.includes('retro:simple:electric-piano'));
 	const generic = instrumentMidiEngines(instrumentCatalogue);
-	for (const dedicated of ['retro:mt32', 'retro:dx7', 'retro:d50'])
+	for (const dedicated of ['retro:mt32', 'retro:dx7', 'retro:d50', 'retro:lapc-i'])
 		assert.notEqual(retroCatalogueMidiEngines[dedicated], generic[dedicated], `${dedicated} keeps its own engine`);
 });
 
@@ -150,5 +150,28 @@ test('the generic engine merges channels, leaves percussion out, thins notes to 
 	assert(
 		block().every((value) => value === 0),
 		'silent after reset',
+	);
+});
+
+test('the Roland LAPC-I, the PC card of the MT-32 synthesizer, is a catalogue model that sounds like the MT-32', () => {
+	const make = (id: string) =>
+		instrumentCatalogue.find((definition) => definition.info.id === id)!.create({ sampleRate: 22050 });
+	const card = make('lapc-i');
+	assert.equal(card.info.family, 'card');
+	assert.equal(card.info.name, 'Roland LAPC-I');
+	const play = (instrument: ReturnType<typeof make>): Float32Array => {
+		instrument.noteOn(60, 100);
+		instrument.noteOn(67, 90);
+		const left = new Float32Array(11025);
+		instrument.render(left, new Float32Array(left.length), 0, left.length);
+		return left;
+	};
+	const a = play(card);
+	assert(a.some((value) => Math.abs(value) > 1e-3));
+	assert.deepEqual(a, play(make('mt32')), 'the same LA model, the same notes, the same samples');
+	assert.equal(
+		retroCatalogueMidiEngines['retro:lapc-i'],
+		retroCatalogueMidiEngines['retro:mt32'],
+		'one MIDI engine, SysEx included',
 	);
 });

@@ -31,9 +31,9 @@ Mesure du 17 octobre 2026, code minifié (octets ; gzip à titre comparatif) :
 | YM2149 seul | 3 170 | 1 343 |
 | YM2149 depuis `/chips` | 3 170 | 1 344 |
 | YM2149 depuis l'entrée principale | 3 170 | 1 344 |
-| Catalogue complet des instruments (`/instruments/catalogue`) | 160 009 | 50 972 |
+| Catalogue complet des instruments (`/instruments/catalogue`) | 160 363 | 51 152 |
 | Moteurs MIDI nommés, un choix de modèles (`/mwg` + `/instruments/psg`) | 16 163 | 5 848 |
-| Moteurs MIDI nommés, les 47 modèles (`/mwg/catalogue`) | 180 224 | 58 586 |
+| Moteurs MIDI nommés, les 48 modèles (`/mwg/catalogue`) | 180 610 | 58 775 |
 | Lecteur de banques SoundFont seul (`/formats/soundfont`) | 7 044 | 2 872 |
 | Instruments SoundFont (`/instruments/soundfont`, lecteur et synthèse compris) | 7 986 | 3 171 |
 | Exports des puces et instruments disponibles | 118 603 | 37 751 |
@@ -52,6 +52,6 @@ Les fabriques intégrées sont décrites par des données sans appels globaux à
 `registerChip`. `createChip` et `chipIds` conservent la découverte explicite des
 33 variantes ; une fabrique personnalisée enregistrée reste prioritaire.
 Le catalogue d'instruments d'interface s'importe explicitement depuis
-`/instruments/catalogue` : il couvre les 47 modèles jouables du paquet (neuf
+`/instruments/catalogue` : il couvre les 48 modèles jouables du paquet (neuf
 profils simples et 37 puces ou synthétiseurs), et reste un choix volontaire
 de l'application, jamais une dépendance implicite d'un import ciblé.

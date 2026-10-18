@@ -11,6 +11,8 @@ export {
 export { SincResampler, type NativeGenerator } from './Resampler.ts';
 export {
 	renderPlayer,
+	renderPlayerAsync,
+	type RenderAsyncOptions,
 	encodeWav,
 	toAudioBuffer,
 	skipFrames,

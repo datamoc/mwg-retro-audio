@@ -48,6 +48,7 @@ export const machines: Readonly<Record<string, Machines>> = {
 	'sound-blaster': { group: 'cards', computers: ['PC (Sound Blaster 1.x / 2.0)'] },
 	cms: { group: 'cards', computers: ['PC (Game Blaster)'] },
 	'pcm-dac': { group: 'cards', computers: ['PC (Covox Speech Thing)'] },
+	'lapc-i': { group: 'cards', computers: ['PC (LAPC-I, MPU-401)'] },
 	mt32: { group: 'synths', computers: ['PC', 'NEC PC-98'], other: ['Roland MT-32 ({module})'] },
 	d50: { group: 'synths', other: ['Roland D-50 ({keyboard}, 1987)'] },
 	m1: { group: 'synths', other: ['Korg M1 ({keyboard}, 1988)'] },
@@ -90,5 +91,6 @@ export const featured: readonly { label: string; model: string }[] = [
 	{ label: 'AdLib / PC', model: 'opl2' },
 	{ label: 'Sharp X68000', model: 'ym2151' },
 	{ label: 'Apple II', model: 'mockingboard' },
+	{ label: 'Roland LAPC-I', model: 'lapc-i' },
 	{ label: 'Roland MT-32', model: 'mt32' },
 ];

@@ -20,6 +20,34 @@ export interface RenderOptions {
 	fadeOut?: number;
 }
 
+/** put the chunks end to end, and fade the end out when the render was cut short */
+function assemble(
+	chunksL: Float32Array[],
+	chunksR: Float32Array[],
+	total: number,
+	rate: number,
+	ended: boolean,
+	fadeOut: number,
+): RenderResult {
+	const left = new Float32Array(total);
+	const right = new Float32Array(total);
+	let o = 0;
+	for (let i = 0; i < chunksL.length; i++) {
+		left.set(chunksL[i], o);
+		right.set(chunksR[i], o);
+		o += chunksL[i].length;
+	}
+	const fade = Math.floor(fadeOut * rate);
+	if (!ended && fade > 0) {
+		for (let i = 0; i < Math.min(fade, total); i++) {
+			const g = i / fade;
+			left[total - 1 - i] *= 1 - g;
+			right[total - 1 - i] *= 1 - g;
+		}
+	}
+	return { sampleRate: rate, left, right, duration: total / rate, ended };
+}
+
 /**
  * Render a player offline to stereo float buffers, running the output stage over the result.
  * The player is rendered from its current position.
@@ -47,23 +75,52 @@ export function renderPlayer(player: RetroPlayer, options: RenderOptions = {}): 
 			break;
 		}
 	}
-	const left = new Float32Array(total);
-	const right = new Float32Array(total);
-	let o = 0;
-	for (let i = 0; i < chunksL.length; i++) {
-		left.set(chunksL[i], o);
-		right.set(chunksR[i], o);
-		o += chunksL[i].length;
-	}
-	const fade = Math.floor((options.fadeOut ?? 0) * rate);
-	if (!ended && fade > 0) {
-		for (let i = 0; i < Math.min(fade, total); i++) {
-			const g = i / fade;
-			left[total - 1 - i] *= 1 - g;
-			right[total - 1 - i] *= 1 - g;
+	return assemble(chunksL, chunksR, total, rate, ended, options.fadeOut ?? 0);
+}
+
+export interface RenderAsyncOptions extends RenderOptions {
+	/** called with the share of `maxSeconds` rendered so far (0..1), about every 50 ms of real time */
+	onProgress?: (fraction: number) => void;
+	/** abort the render: the promise rejects with an `AbortError` */
+	signal?: AbortSignal;
+}
+
+/**
+ * `renderPlayer` for a page: the same audio, but the render gives the thread back to the browser about every 30 ms of
+ * real time, so a long song does not freeze the page, and it reports its progress and can be aborted.
+ */
+export async function renderPlayerAsync(player: RetroPlayer, options: RenderAsyncOptions = {}): Promise<RenderResult> {
+	const rate = player.sampleRate;
+	const maxFrames = Math.floor((options.maxSeconds ?? 600) * rate);
+	const chunk = 4096;
+	const chunksL: Float32Array[] = [];
+	const chunksR: Float32Array[] = [];
+	let total = 0;
+	let ended = false;
+	const stage = options.output ? new OutputStage(rate, options.output) : null;
+	let lastYield = Date.now();
+	while (total < maxFrames) {
+		if (options.signal?.aborted) throw Object.assign(new Error('render aborted'), { name: 'AbortError' });
+		const n = Math.min(chunk, maxFrames - total);
+		const l = new Float32Array(n);
+		const r = new Float32Array(n);
+		const got = player.render(l, r, 0, n);
+		if (stage) stage.process(l, r, 0, got);
+		chunksL.push(l.subarray(0, got));
+		chunksR.push(r.subarray(0, got));
+		total += got;
+		if (got < n) {
+			ended = true;
+			break;
+		}
+		if (Date.now() - lastYield >= 30) {
+			options.onProgress?.(total / maxFrames);
+			await new Promise<void>((resolve) => setTimeout(resolve, 0));
+			lastYield = Date.now();
 		}
 	}
-	return { sampleRate: rate, left, right, duration: total / rate, ended };
+	options.onProgress?.(1);
+	return assemble(chunksL, chunksR, total, rate, ended, options.fadeOut ?? 0);
 }
 
 /** Advance a player by `frames` frames without keeping the audio (seeking: the chips must see every write) */

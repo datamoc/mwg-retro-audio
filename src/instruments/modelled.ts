@@ -8,7 +8,7 @@ import {
 	type FilterVoiceParams,
 } from '../chips/historical.ts';
 import { Mt32Synth } from '../chips/Mt32Synth.ts';
-import { definition } from './SynthInstrument.ts';
+import { definition, type SynthInstrument } from './SynthInstrument.ts';
 import { choiceControl, labelled, param } from './controls.ts';
 import type { InstrumentDef } from './Instrument.ts';
 
@@ -20,6 +20,19 @@ class PlayableMt32 extends Mt32Synth {
 	noteOff(note: number): void {
 		this.event(0x81, note, 0);
 	}
+}
+
+/** the settings of the LA model of the MT-32 and of its PC card, the LAPC-I */
+function configureMt32(instrument: SynthInstrument<PlayableMt32>): void {
+	instrument.chip.reset();
+	instrument.controls.push(
+		choiceControl(
+			{ id: 'program', label: 'Programme MT-32 (familles approchées)' },
+			labelled(Array.from({ length: 128 }, (_, index) => String(index + 1))),
+			param(0),
+			(index) => instrument.chip.event(0xc1, index, 0),
+		),
+	);
 }
 
 export const modelledInstruments: readonly InstrumentDef[] = [
@@ -208,22 +221,19 @@ export const modelledInstruments: readonly InstrumentDef[] = [
 			},
 		),
 	),
+	definition('mt32', 'Roland MT-32', '1987', 16, (options) => new PlayableMt32(options.sampleRate), configureMt32),
+	// the PC card of the same LA synthesizer: PC players of the time look for it by this name
 	definition(
-		'mt32',
-		'Roland MT-32',
-		'1987',
+		'lapc-i',
+		'Roland LAPC-I',
+		'1989',
 		16,
 		(options) => new PlayableMt32(options.sampleRate),
-		(instrument) => {
-			instrument.chip.reset();
-			instrument.controls.push(
-				choiceControl(
-					{ id: 'program', label: 'Programme MT-32 (familles approchées)' },
-					labelled(Array.from({ length: 128 }, (_, index) => String(index + 1))),
-					param(0),
-					(index) => instrument.chip.event(0xc1, index, 0),
-				),
-			);
+		configureMt32,
+		{
+			family: 'card',
+			description:
+				'Carte ISA pour PC (avec interface MPU-401) portant le même synthétiseur LA que le module MT-32 : ici le même modèle sans ROM, qui joue les mêmes notes avec des timbres approchés, pas ceux de la ROM d’origine.',
 		},
 	),
 ];

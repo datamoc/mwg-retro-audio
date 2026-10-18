@@ -5,12 +5,14 @@ import { retroMidiEngines } from './midiEngines.ts';
 
 /**
  * Every model of the catalogue as a named MIDI engine (`retro:<id>`), the dedicated `retro:mt32`, `retro:dx7` and
- * `retro:d50` keeping their own implementations (they read SysEx). This module imports the whole catalogue: import it
+ * `retro:d50` keeping their own implementations (they read SysEx), and `retro:lapc-i` sharing the MT-32 one. This module imports the whole catalogue: import it
  * only when every model is wanted, and use `instrumentMidiEngines` from the `mwg` entry point for a chosen few.
  */
 export const retroCatalogueMidiEngines: Readonly<Record<string, MidiSynthFactory>> = Object.freeze({
 	...instrumentMidiEngines(instrumentCatalogue),
 	...retroMidiEngines,
+	// the LAPC-I is the MT-32 on a PC card: the same engine, SysEx included
+	'retro:lapc-i': retroMidiEngines['retro:mt32'],
 });
 
 /** registers them with mwg's `registerMidiSynth`; returns the names */

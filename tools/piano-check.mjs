@@ -265,7 +265,7 @@ await typed.waitForTimeout(200);
 if (!(await typed.evaluate(() => document.getElementById('clock').textContent)).includes('Yamaha YM2149'))
 	record('recorder', 'the take did not replay on the model chosen afterwards');
 // voix standard et export audio hors ligne : FLAC, Opus (si le navigateur sait l'encoder), WAV
-await typed.selectOption('#recVoice', 'standard');
+await typed.selectOption('#songVoice', 'standard');
 await typed.click('#recPlay');
 await typed.waitForTimeout(200);
 if (!(await typed.evaluate(() => document.getElementById('clock').textContent)).includes('Piano'))
@@ -275,22 +275,37 @@ for (const [format, magic, extension] of [
 	['flac', 'fLaC', '.flac'],
 	['wav', 'RIFF', '.wav'],
 ]) {
-	await typed.selectOption('#recFormat', format);
-	const [audio] = await Promise.all([typed.waitForEvent('download'), typed.click('#recExport')]);
+	await typed.selectOption('#exportFormat', format);
+	const [audio] = await Promise.all([typed.waitForEvent('download'), typed.click('#exportButton')]);
 	const head = (await readFile(await audio.path())).subarray(0, 4).toString('latin1');
 	if (head !== magic || !audio.suggestedFilename().endsWith(extension))
 		record('recorder', `${format} export: ${head} ${audio.suggestedFilename()}`);
 }
 const opusUsable = await typed.evaluate(() => typeof AudioEncoder !== 'undefined');
-const opusEnabled = await typed.evaluate(() => !document.querySelector('#recFormat option[value="opus"]').disabled);
+const opusEnabled = await typed.evaluate(() => !document.querySelector('#exportFormat option[value="opus"]').disabled);
 if (opusUsable !== opusEnabled) record('recorder', `Opus option enabled=${opusEnabled} but WebCodecs=${opusUsable}`);
 if (opusEnabled) {
-	await typed.selectOption('#recFormat', 'opus');
-	const [opus] = await Promise.all([typed.waitForEvent('download', { timeout: 60000 }), typed.click('#recExport')]);
+	await typed.selectOption('#exportFormat', 'opus');
+	const [opus] = await Promise.all([typed.waitForEvent('download', { timeout: 60000 }), typed.click('#exportButton')]);
 	const head = (await readFile(await opus.path())).subarray(0, 4).toString('latin1');
 	if (head !== 'OggS' || !opus.suggestedFilename().endsWith('.opus')) record('recorder', `opus export: ${head}`);
 }
+// l'export audio est séparé de l'enregistrement : il exporte le morceau sélectionné, même sans prise
+if ((await typed.locator('#recorder #exportButton').count()) !== 0) record('export', 'the export button is still in the recorder panel');
 await typed.close();
+const exportPage = await newPage();
+await enableSound(exportPage);
+await exportPage.selectOption('#song', { label: 'Ancient mysteries' });
+await exportPage.waitForTimeout(200);
+await exportPage.click('#stop');
+const exportLabel = await exportPage.evaluate(() => document.getElementById('exportButton').textContent);
+if (!exportLabel.includes('Ancient mysteries')) record('export', `the export button does not name the song: ${exportLabel}`);
+await exportPage.selectOption('#exportFormat', 'flac');
+const [songFile] = await Promise.all([exportPage.waitForEvent('download', { timeout: 120000 }), exportPage.click('#exportButton')]);
+const songBytes = await readFile(await songFile.path());
+if (songBytes.subarray(0, 4).toString('latin1') !== 'fLaC' || songBytes.length < 100000 || !/^ancient-mysteries-.*\.flac$/.test(songFile.suggestedFilename()))
+	record('export', `song export: ${songFile.suggestedFilename()} ${songBytes.length} bytes`);
+await exportPage.close();
 
 // dossier de MIDI : sélecteur de dossier simulé (liste triée, titre de l'en-tête, sous-dossier, fichiers refusés)
 const folderMock = {

@@ -141,8 +141,9 @@ Validé par `tools/piano-check.mjs` avec le MIDI simulé.
   (`renderPlayer` sur `MidiPlayer` + `InstrumentMidiSink`) puis l'exporter en FLAC ou
   Opus par `exportAudio` — Opus exige WebCodecs, griser le bouton d'après
   `isOpusEncodingAvailable()`.
-  Livré : sélecteur « Voix » (modèle choisi ou piano simple standard) pour la
-  réécoute et l'export ; « Exporter l'audio » rend la prise hors ligne
+  Livré : sélecteur « Voix du morceau » (modèle choisi ou piano simple standard) pour la
+  lecture et l'export ; le panneau « Export audio du morceau courant », séparé de
+  l'enregistrement, rend le morceau sélectionné (la prise comprise) hors ligne
   (`MidiPlayer` + `InstrumentMidiSink` + `renderPlayer`, sur une copie de
   l'instrument qui garde ses réglages) puis l'encode en FLAC, Opus ou WAV par
   `exportAudioBlob` ; l'option Opus est grisée quand `isOpusEncodingAvailable()` est
@@ -173,7 +174,7 @@ Validé par `tools/piano-check.mjs` avec le MIDI simulé.
   nul pour chaque moteur — et liste documentée avec `docs/MWG-REQUIREMENTS.md`.
   Livré : `InstrumentMidiSynth` / `instrumentMidiEngines(définitions)` dans `/mwg` (un
   choix de modèles, sans catalogue) et `/mwg/catalogue` (`registerRetroCatalogueMidiEngines`,
-  46 moteurs `retro:<id>` ; `retro:mt32`, `retro:dx7` et `retro:d50` gardent leurs
+  48 moteurs `retro:<id>` (46 à la livraison, puis le microKORG et la carte LAPC-I) ; `retro:mt32`, `retro:dx7` et `retro:d50` gardent leurs
   moteurs dédiés avec SysEx). Le catalogue n'entre pas dans `/mwg` : `check:bundles`
   le vérifie (`mwgTargeted` 16 Ko, `mwgCatalogue` 169 Ko ; profil et puce seuls
   inchangés). Tests : `tests/mwg-engines.test.ts`.

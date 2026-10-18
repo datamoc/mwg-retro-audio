@@ -8,7 +8,7 @@ import { writeSmf } from '../../src/formats/midiWrite.ts';
 import { parseSf2 } from '../../src/formats/soundfont.ts';
 import { soundFontBankId, soundFontInstruments } from '../../src/instruments/soundfont.ts';
 import type { InstrumentDef } from '../../src/instruments/Instrument.ts';
-import { renderPlayer } from '../../src/driver/Renderer.ts';
+import { renderPlayerAsync } from '../../src/driver/Renderer.ts';
 import { AUDIO_FORMATS, exportAudioBlob } from '../../src/driver/export.ts';
 import type { AudioFormat } from '../../src/driver/export.ts';
 import { isOpusEncodingAvailable } from '../../src/driver/opus.ts';
@@ -380,13 +380,14 @@ function buildSongList(): void {
 	songSelect.value = entryOf(selected) ? selected : builtIn[0].key;
 }
 buildSongList();
-/** the instrument a song plays on: the chosen model, or the plain piano for a take set to the standard voice */
-function voiceFor(key: string): Instrument {
-	if (key === 'take' && element<HTMLSelectElement>('recVoice').value === 'standard')
+/** the instrument a song plays on: the chosen model, or the plain piano when the song voice is the standard one */
+function voiceFor(_key: string): Instrument {
+	if (element<HTMLSelectElement>('songVoice').value === 'standard')
 		return definitionOf('simple:Piano')!.create({ sampleRate: context?.sampleRate ?? 44100 });
 	return instrument;
 }
 function paintSong(): void {
+	paintExport();
 	playButton.textContent = current ? t('playAgain') : t('play');
 	stopButton.disabled = !current;
 	if (!current) {
@@ -518,6 +519,7 @@ folderButton.addEventListener(
 			userEntries = [...entries, ...userEntries.filter((entry) => entry.kind !== 'folder')];
 			buildSongList();
 			songSelect.value = entries[0].key;
+			paintExport();
 			say('folderLoaded', { count: entries.length, name: folder.name });
 			if (skipped) status.value += t('folderSkipped', { skipped });
 		} catch (error) {
@@ -672,22 +674,21 @@ const recButtons = {
 	play: element<HTMLButtonElement>('recPlay'),
 	download: element<HTMLButtonElement>('recDownload'),
 	clear: element<HTMLButtonElement>('recClear'),
-	export: element<HTMLButtonElement>('recExport'),
 };
 let exporting = false;
-const recFormat = element<HTMLSelectElement>('recFormat');
+const exportFormat = element<HTMLSelectElement>('exportFormat');
 // Opus needs WebCodecs: the option is greyed out where the browser cannot encode it
 void isOpusEncodingAvailable().then((available) => {
-	const option = recFormat.querySelector<HTMLOptionElement>('option[value="opus"]')!;
+	const option = exportFormat.querySelector<HTMLOptionElement>('option[value="opus"]')!;
 	option.disabled = !available;
 	option.title = available ? '' : t('recOpusMissing');
-	if (!available && recFormat.value === 'opus') recFormat.value = 'flac';
+	if (!available && exportFormat.value === 'opus') exportFormat.value = 'flac';
 });
 const formatSize = (bytes: number): string =>
 	bytes < 1024 * 1024 ? `${Math.round(bytes / 1024)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 /** a copy of the live instrument for an offline render: same model, same settings, and no disturbing the live notes */
 function offlineVoice(rate: number): Instrument {
-	const key = element<HTMLSelectElement>('recVoice').value === 'standard' ? 'simple:Piano' : instrument.info.id;
+	const key = element<HTMLSelectElement>('songVoice').value === 'standard' ? 'simple:Piano' : instrument.info.id;
 	const copy = definitionOf(key)!.create({ sampleRate: rate });
 	if (key === instrument.info.id)
 		for (const { id, get } of instrument.controls.map((control) => ({ id: control.id, get: () => control.get() })))
@@ -696,29 +697,49 @@ function offlineVoice(rate: number): Instrument {
 			)?.set(get());
 	return copy;
 }
-/** render the take offline through the chosen voice and download it as FLAC, Opus or WAV */
-async function exportTake(): Promise<void> {
-	if (!take.length || exporting) return;
-	const kind = recFormat.value as AudioFormat;
+const exportButton = element<HTMLButtonElement>('exportButton');
+const exportProgress = element<HTMLProgressElement>('exportProgress');
+/** the label of the export button names the song it will export, and the button is off while a render runs */
+function paintExport(): void {
+	const entry = entryOf(songSelect.value);
+	exportButton.textContent = t('exportButton', { title: entry?.title() ?? '' });
+	exportButton.disabled = !entry || exporting;
+}
+/** render the song selected in the list offline, through the chosen voice, and download it as FLAC, Opus or WAV */
+async function exportSong(): Promise<void> {
+	const entry = entryOf(songSelect.value);
+	if (!entry || exporting) return;
+	const kind = exportFormat.value as AudioFormat;
 	exporting = true;
-	paintRecorder();
+	paintExport();
+	exportProgress.hidden = false;
+	exportProgress.value = 0;
 	say('recExporting', { format: kind.toUpperCase() });
 	try {
 		const rate = context?.sampleRate ?? 44100;
-		const duration = take[take.length - 1].time;
+		const song = entry.song();
 		const voice = offlineVoice(rate);
-		const player = new MidiPlayer({ events: take, duration }, { sampleRate: rate }, new InstrumentMidiSink(voice));
-		const rendered = renderPlayer(player, { maxSeconds: duration + 2, fadeOut: 0.05 });
+		const player = new MidiPlayer(song, { sampleRate: rate }, new InstrumentMidiSink(voice));
+		const rendered = await renderPlayerAsync(player, {
+			maxSeconds: song.duration + 2,
+			fadeOut: 0.05,
+			onProgress: (fraction) => {
+				exportProgress.value = fraction;
+				say('exportProgress', { title: entry.title(), percent: Math.round(fraction * 100) });
+			},
+		});
 		const blob = await exportAudioBlob(rendered, kind, {
-			tags: { TITLE: 'mwg-retro-audio recording', COMMENT: voice.info.name },
+			tags: { TITLE: entry.title(), COMMENT: `${voice.info.name} — mwg-retro-audio` },
 		});
 		const stamp = new Date().toISOString().slice(0, 16).replace(/[-:]/g, '').replace('T', '-');
-		saveBlob(blob, `mwg-recording-${stamp}.${AUDIO_FORMATS[kind].extension}`);
+		const base = soundFontBankId(entry.title()) || 'song';
+		saveBlob(blob, `${base}-${stamp}.${AUDIO_FORMATS[kind].extension}`);
 	} catch (error) {
 		say('recExportFail', { error: String(error) });
 	} finally {
 		exporting = false;
-		paintRecorder();
+		exportProgress.hidden = true;
+		paintExport();
 	}
 }
 /** hand a blob to the browser as a download */
@@ -744,8 +765,8 @@ function recordMessage(status: number, data1: number, data2: number): void {
 function paintRecorder(): void {
 	recButtons.start.disabled = !!recording;
 	recButtons.stop.disabled = !recording;
-	for (const button of [recButtons.play, recButtons.download, recButtons.clear, recButtons.export])
-		button.disabled = !!recording || take.length === 0 || (button === recButtons.export && exporting);
+	for (const button of [recButtons.play, recButtons.download, recButtons.clear])
+		button.disabled = !!recording || take.length === 0;
 	const duration = take.length ? take[take.length - 1].time : 0;
 	element('recStatus').textContent = recording
 		? t('recRecording', { notes: noteCount(recording.events) })
@@ -807,7 +828,15 @@ recButtons.start.addEventListener('click', () => void startRecording(), options)
 recButtons.stop.addEventListener('click', finishRecording, options);
 recButtons.play.addEventListener('click', () => void replayTake(), options);
 recButtons.download.addEventListener('click', downloadTake, options);
-recButtons.export.addEventListener('click', () => void exportTake(), options);
+exportButton.addEventListener('click', () => void exportSong(), options);
+songSelect.addEventListener('change', paintExport, options);
+element<HTMLSelectElement>('songVoice').addEventListener(
+	'change',
+	() => {
+		if (current) void playSong(current.key);
+	},
+	options,
+);
 recButtons.clear.addEventListener(
 	'click',
 	() => {
@@ -911,6 +940,7 @@ function applyLanguage(code: Lang): void {
 	paintKeysHelp();
 	paintRecorder();
 	buildBankList();
+	paintExport();
 	status.value = t(said.key, said.values);
 }
 function refreshMidiLabel(): void {

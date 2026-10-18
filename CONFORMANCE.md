@@ -15,9 +15,9 @@ le lecteur rétro ; les horloges historiques sont préservées. Voir
 
 ## Catalogue d'instruments, piano interactif et bundles (17 octobre 2026)
 
-Le catalogue explicite `src/instruments/catalogue.ts` couvre les **47 modèles
+Le catalogue explicite `src/instruments/catalogue.ts` couvre les **48 modèles
 jouables** du paquet : neuf profils simples, YM2149/AY-3-8910, D-50, M1, microKORG, GS-1,
-VL-1, DX7, Bell Labs, Dartmouth, Synclavier, LA, AI, MT-32, SN76489/Tandy,
+VL-1, DX7, Bell Labs, Dartmouth, Synclavier, LA, AI, MT-32, Roland LAPC-I (la carte PC du même synthétiseur LA, même modèle que le MT-32), SN76489/Tandy,
 SID 6581/8580, APU NES NTSC/PAL, VRC6, MMC5, Sunsoft 5B, Namco 163, FDS,
 OPL2/OPL3/Sound Blaster, YM2612, YM2203, YM2608, YM2151, SAA1099, C/MS,
 PC speaker, Mockingboard, Apple II et sample DAC (sans hauteur musicale,
@@ -29,7 +29,7 @@ un rendu fini et non nul, l'isolation des presets entre instances, la
 restauration des réglages par défaut et du silence après réinitialisation, et
 le vol de voix sans note bloquée sous pédale. `node tools/piano-check.mjs`
 rejoue l'exemple `examples/piano/` dans **Chrome 155.0.8059.85 headless**
-(playwright-core 1.64.1, dépendance du projet voisin `../mwg`) : les 47 modèles
+(playwright-core 1.64.1, dépendance du projet voisin `../mwg`) : les 48 modèles
 construisent leur panneau, produisent un signal non nul au clavier d'ordinateur,
 à la souris et en MIDI simulé ; accords, changement de modèle en cours de note,
 coupure d'urgence, perte de focus, déconnexion MIDI, refus et absence de Web
@@ -40,8 +40,8 @@ injectée dans la page : aucun clavier MIDI physique n'a encore été essayé, e
 cette validation n'est pas une comparaison à l'oreille.
 
 Le studio d'enregistrement de la démo (prise au clavier MIDI, à la souris ou au clavier
-d'ordinateur, réécoute, export `.mid`, rendu hors ligne en FLAC, Opus ou WAV, dossier de
-MIDI) est vérifié par `piano-check` dans Chrome 155 : MIDI et sélecteur de dossier
+d'ordinateur, réécoute, export `.mid`, dossier de MIDI) et l'export audio du morceau courant (rendu hors
+ligne asynchrone en FLAC, Opus ou WAV, panneau séparé) est vérifié par `piano-check` dans Chrome 155 : MIDI et sélecteur de dossier
 **simulés** (fausses API), fichiers téléchargés contrôlés (`MThd`, `fLaC`, `OggS`,
 `RIFF`). `InstrumentMidiSink` joue un MIDI sur un instrument en fusionnant les canaux,
 sans percussions, et élague les voix à la polyphonie du modèle (mélodie et basse
@@ -61,7 +61,7 @@ nommés, `SfxBank` / `SfxBackend`, `AudioSettings`, `.mwp` avec `requires.retroA
 doubles de test). Le paquet y répond dans `src/mwg/` : `retroBlockSource` et
 `retroLoopRegion` (lecture à la demande et recherche, sans tout rendre),
 `registerRetroMidiEngines` avec `retro:mt32`, `retro:dx7` (dumps SysEx de 32 voix)
-et `retro:d50`, les 46 modèles du catalogue en `retro:<id>` (`/mwg/catalogue`, `InstrumentMidiSynth` : canaux fusionnés, percussions omises, voix élaguées à la polyphonie du modèle, pitch bend de ±2 demi-tons et pédale de sustain transmis, programmes et SysEx ignorés ; **validé** par `tests/mwg-engines.test.ts` : les 46 moteurs voisent un MIDI de trois accords à travers `renderMidiThroughSynth`, un vrai fichier (Ancient Mysteries) passe par trois moteurs de familles différentes, `onMidiSynthFallback` signale un nom inconnu ou une fabrique qui échoue), `retroSfxBackend` + `toMwgSfxDefinition` (+ `SfxEngine.isActive`),
+et `retro:d50`, les 48 modèles du catalogue en `retro:<id>` (`retro:lapc-i` partage le moteur du MT-32) (`/mwg/catalogue`, `InstrumentMidiSynth` : canaux fusionnés, percussions omises, voix élaguées à la polyphonie du modèle, pitch bend de ±2 demi-tons et pédale de sustain transmis, programmes et SysEx ignorés ; **validé** par `tests/mwg-engines.test.ts` : les 46 moteurs voisent un MIDI de trois accords à travers `renderMidiThroughSynth`, un vrai fichier (Ancient Mysteries) passe par trois moteurs de familles différentes, `onMidiSynthFallback` signale un nom inconnu ou une fabrique qui échoue), `retroSfxBackend` + `toMwgSfxDefinition` (+ `SfxEngine.isActive`),
 et le mapping `AudioSettings` → options de chargement / étage de sortie.
 Vérifié par `tests/mwg.test.ts` (neuf tests, dont rendu d'un fichier MIDI réel de
 mwg à travers le moteur DX7, flux YM complet dans un `StreamChannel` et formule

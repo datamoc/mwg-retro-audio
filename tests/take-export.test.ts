@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { MidiPlayer } from '../src/formats/midi.ts';
 import type { MidiEvent } from '../src/formats/midi.ts';
-import { renderPlayer } from '../src/driver/Renderer.ts';
+import { renderPlayer, renderPlayerAsync } from '../src/driver/Renderer.ts';
 import { exportAudio } from '../src/driver/export.ts';
 import { InstrumentMidiSink } from '../src/instruments/InstrumentMidiSink.ts';
 import { instrumentCatalogue } from '../src/instruments/catalogue.ts';
@@ -50,4 +50,39 @@ test('the rendered take exports to a FLAC file that decodes to the same audio, a
 	assert(decoded.comments.some((comment) => comment.startsWith('TITLE=')));
 	const wav = await exportAudio(result, 'wav');
 	assert.equal(String.fromCharCode(...wav.subarray(0, 4)), 'RIFF');
+});
+
+function playerFor(id: string): MidiPlayer {
+	const instrument = instrumentCatalogue
+		.find((definition) => definition.info.id === id)!
+		.create({ sampleRate: RATE });
+	return new MidiPlayer({ events: take, duration }, { sampleRate: RATE }, new InstrumentMidiSink(instrument));
+}
+
+test('the asynchronous render is the same audio as the synchronous one, reports its progress', async () => {
+	const direct = renderPlayer(playerFor('simple:Piano'), { maxSeconds: duration + 2 });
+	const fractions: number[] = [];
+	const result = await renderPlayerAsync(playerFor('simple:Piano'), {
+		maxSeconds: duration + 2,
+		onProgress: (fraction) => fractions.push(fraction),
+	});
+	assert.equal(result.left.length, direct.left.length);
+	assert.deepEqual(result.left, direct.left);
+	assert.deepEqual(result.right, direct.right);
+	assert.equal(result.ended, true);
+	assert.equal(fractions.at(-1), 1);
+	assert(
+		fractions.every((value, index) => index === 0 || value >= fractions[index - 1]),
+		'progress never goes back',
+	);
+});
+
+test('a long render is cut at maxSeconds with a fade, and an aborted one rejects with an AbortError', async () => {
+	const cut = await renderPlayerAsync(playerFor('ym2149'), { maxSeconds: 0.3, fadeOut: 0.1 });
+	assert.equal(cut.ended, false);
+	assert(Math.abs(cut.duration - 0.3) < 0.001);
+	assert(Math.abs(cut.left[cut.left.length - 1]) < 1e-3, 'faded out at the cut');
+	const controller = new AbortController();
+	controller.abort();
+	await assert.rejects(renderPlayerAsync(playerFor('ym2149'), { signal: controller.signal }), { name: 'AbortError' });
 });
