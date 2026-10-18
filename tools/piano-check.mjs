@@ -27,7 +27,9 @@ try {
 	playwrightVersion = require('playwright-core/package.json').version;
 } catch {
 	({ chromium } = require(resolve(import.meta.dirname, '../../mwg/node_modules/playwright-core')));
-	playwrightVersion = require(resolve(import.meta.dirname, '../../mwg/node_modules/playwright-core/package.json')).version;
+	playwrightVersion = require(
+		resolve(import.meta.dirname, '../../mwg/node_modules/playwright-core/package.json'),
+	).version;
 }
 
 const root = resolve(import.meta.dirname, '..');
@@ -197,7 +199,11 @@ const key = page.locator('[data-note="60"]');
 await key.scrollIntoViewIfNeeded();
 const box = await key.boundingBox();
 await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-const peakMouse = await levelWhileHeld(page, () => page.mouse.down(), () => page.mouse.up());
+const peakMouse = await levelWhileHeld(
+	page,
+	() => page.mouse.down(),
+	() => page.mouse.up(),
+);
 if (peakMouse < 0.001) record('mouse', `no signal from pointer press (peak ${peakMouse})`);
 if ((await activeCount(page)) !== 0) record('mouse', 'pointer note stayed highlighted');
 const chord = page.locator('[data-note="64"]');
@@ -271,7 +277,8 @@ if (!/2 notes/.test(typedStatus)) record('recorder', `typed take: ${typedStatus}
 const [typedFile] = await Promise.all([typed.waitForEvent('download'), typed.click('#recDownload')]);
 const typedBytes = await readFile(await typedFile.path());
 const count = (status, note) => typedBytes.filter((byte, i) => byte === status && typedBytes[i + 1] === note).length;
-if (count(0x90, 60) !== 1 || count(0x80, 60) < 1) record('recorder', 'note cut by the model change left hanging in the take');
+if (count(0x90, 60) !== 1 || count(0x80, 60) < 1)
+	record('recorder', 'note cut by the model change left hanging in the take');
 await typed.selectOption('#model', 'ym2149');
 await typed.click('#recPlay');
 await typed.waitForTimeout(200);
@@ -299,12 +306,16 @@ const opusEnabled = await typed.evaluate(() => !document.querySelector('#exportF
 if (opusUsable !== opusEnabled) record('recorder', `Opus option enabled=${opusEnabled} but WebCodecs=${opusUsable}`);
 if (opusEnabled) {
 	await typed.selectOption('#exportFormat', 'opus');
-	const [opus] = await Promise.all([typed.waitForEvent('download', { timeout: 60000 }), typed.click('#exportButton')]);
+	const [opus] = await Promise.all([
+		typed.waitForEvent('download', { timeout: 60000 }),
+		typed.click('#exportButton'),
+	]);
 	const head = (await readFile(await opus.path())).subarray(0, 4).toString('latin1');
 	if (head !== 'OggS' || !opus.suggestedFilename().endsWith('.opus')) record('recorder', `opus export: ${head}`);
 }
 // l'export audio est séparé de l'enregistrement : il exporte le morceau sélectionné, même sans prise
-if ((await typed.locator('#recorder #exportButton').count()) !== 0) record('export', 'the export button is still in the recorder panel');
+if ((await typed.locator('#recorder #exportButton').count()) !== 0)
+	record('export', 'the export button is still in the recorder panel');
 await typed.close();
 const exportPage = await newPage();
 await enableSound(exportPage);
@@ -312,11 +323,19 @@ await exportPage.selectOption('#song', { label: 'Ancient mysteries' });
 await exportPage.waitForTimeout(200);
 await exportPage.click('#stop');
 const exportLabel = await exportPage.evaluate(() => document.getElementById('exportButton').textContent);
-if (!exportLabel.includes('Ancient mysteries')) record('export', `the export button does not name the song: ${exportLabel}`);
+if (!exportLabel.includes('Ancient mysteries'))
+	record('export', `the export button does not name the song: ${exportLabel}`);
 await exportPage.selectOption('#exportFormat', 'flac');
-const [songFile] = await Promise.all([exportPage.waitForEvent('download', { timeout: 120000 }), exportPage.click('#exportButton')]);
+const [songFile] = await Promise.all([
+	exportPage.waitForEvent('download', { timeout: 120000 }),
+	exportPage.click('#exportButton'),
+]);
 const songBytes = await readFile(await songFile.path());
-if (songBytes.subarray(0, 4).toString('latin1') !== 'fLaC' || songBytes.length < 100000 || !/^ancient-mysteries-.*\.flac$/.test(songFile.suggestedFilename()))
+if (
+	songBytes.subarray(0, 4).toString('latin1') !== 'fLaC' ||
+	songBytes.length < 100000 ||
+	!/^ancient-mysteries-.*\.flac$/.test(songFile.suggestedFilename())
+)
 	record('export', `song export: ${songFile.suggestedFilename()} ${songBytes.length} bytes`);
 await exportPage.close();
 
@@ -326,7 +345,31 @@ const folderMock = {
 		const smf = (title) => {
 			const name = [...title].map((c) => c.charCodeAt(0));
 			const track = [0, 0xff, 3, name.length, ...name, 0, 0x90, 60, 100, 0x60, 0x80, 60, 0, 0, 0xff, 0x2f, 0];
-			return new Uint8Array([0x4d, 0x54, 0x68, 0x64, 0, 0, 0, 6, 0, 0, 0, 1, 1, 0xe0, 0x4d, 0x54, 0x72, 0x6b, 0, 0, 0, track.length, ...track]);
+			return new Uint8Array([
+				0x4d,
+				0x54,
+				0x68,
+				0x64,
+				0,
+				0,
+				0,
+				6,
+				0,
+				0,
+				0,
+				1,
+				1,
+				0xe0,
+				0x4d,
+				0x54,
+				0x72,
+				0x6b,
+				0,
+				0,
+				0,
+				track.length,
+				...track,
+			]);
 		};
 		const file = (name, data) => ({ kind: 'file', name, getFile: async () => new File([data], name) });
 		const dir = (name, children) => ({
@@ -358,11 +401,16 @@ const folderPage = await newPage('ok', folderMock);
 await enableSound(folderPage);
 await folderPage.click('#folder');
 await folderPage.waitForFunction(() => document.querySelectorAll('#song option').length > 8);
-const listedSongs = await folderPage.evaluate(() => Array.from(document.querySelectorAll('#song option')).map((o) => o.textContent));
-if (listedSongs.slice(0, 3).join('|') !== 'alpha|Deep tune|Zeta tune') record('folder', `list: ${listedSongs.slice(0, 4)}`);
-if (listedSongs.some((title) => /broken|notes/.test(title))) record('folder', 'an unreadable or foreign file was listed');
+const listedSongs = await folderPage.evaluate(() =>
+	Array.from(document.querySelectorAll('#song option')).map((o) => o.textContent),
+);
+if (listedSongs.slice(0, 3).join('|') !== 'alpha|Deep tune|Zeta tune')
+	record('folder', `list: ${listedSongs.slice(0, 4)}`);
+if (listedSongs.some((title) => /broken|notes/.test(title)))
+	record('folder', 'an unreadable or foreign file was listed');
 const folderStatus = await folderPage.evaluate(() => document.getElementById('status').value);
-if (!/3 morceaux/.test(folderStatus) || !/1 fichiers ignorés/.test(folderStatus)) record('folder', `status: ${folderStatus}`);
+if (!/3 morceaux/.test(folderStatus) || !/1 fichiers ignorés/.test(folderStatus))
+	record('folder', `status: ${folderStatus}`);
 await folderPage.selectOption('#song', { label: 'Zeta tune' });
 await folderPage.waitForTimeout(200);
 if (!(await folderPage.evaluate(() => document.getElementById('clock').textContent)).includes('Zeta tune'))
@@ -381,7 +429,8 @@ for (const [mode, check] of [
 	const disabled = await fallback.evaluate(() => document.getElementById('folder').disabled);
 	if (!check(text, disabled)) record(`folder-${mode}`, `status "${text}", disabled ${disabled}`);
 	const { press, release } = keyboard(fallback);
-	if ((await levelWhileHeld(fallback, press, release, 500)) < 0.001) record(`folder-${mode}`, 'keyboard became unplayable');
+	if ((await levelWhileHeld(fallback, press, release, 500)) < 0.001)
+		record(`folder-${mode}`, 'keyboard became unplayable');
 	await fallback.close();
 }
 
@@ -403,12 +452,16 @@ const sf2Module = await build({
 	write: false,
 	logLevel: 'warning',
 });
-const sf2Tools = await import(`data:text/javascript;base64,${Buffer.from(sf2Module.outputFiles[0].text).toString('base64')}`);
+const sf2Tools = await import(
+	`data:text/javascript;base64,${Buffer.from(sf2Module.outputFiles[0].text).toString('base64')}`
+);
 const sampleBank = (name, version) =>
 	sf2Tools.buildSf2({
 		name,
 		version,
-		samples: [{ name: 'Sine', data: sf2Tools.sine(100, 8), rate: 44100, rootKey: 69, loopStart: 200, loopEnd: 600 }],
+		samples: [
+			{ name: 'Sine', data: sf2Tools.sine(100, 8), rate: 44100, rootKey: 69, loopStart: 200, loopEnd: 600 },
+		],
 		instruments: [{ name: 'I', zones: [{ gens: [[sf2Tools.GEN.sampleModes, 1]], target: 0 }] }],
 		presets: [
 			{ name: 'Sine pad', zones: [{ target: 0 }] },
@@ -424,31 +477,45 @@ await bankPage.setInputFiles('#sfFile', {
 });
 await bankPage.waitForFunction(() => document.getElementById('model').value.startsWith('soundfont:'));
 const bankState = await bankPage.evaluate(() => ({
-	group: Array.from(document.querySelectorAll('#model optgroup')).map((g) => g.label).at(-1),
+	group: Array.from(document.querySelectorAll('#model optgroup'))
+		.map((g) => g.label)
+		.at(-1),
 	options: document.querySelectorAll('#model optgroup:last-child option').length,
 	status: document.getElementById('status').value,
 	controls: document.querySelectorAll('#controls .control').length,
 }));
-if (bankState.group !== 'SoundFont : Test bank' || bankState.options !== 2 || !/2 préréglages/.test(bankState.status) || bankState.controls < 6)
+if (
+	bankState.group !== 'SoundFont : Test bank' ||
+	bankState.options !== 2 ||
+	!/2 préréglages/.test(bankState.status) ||
+	bankState.controls < 6
+)
 	record('soundfont', JSON.stringify(bankState));
 const bankKeys = keyboard(bankPage);
-if ((await levelWhileHeld(bankPage, bankKeys.press, bankKeys.release, 600)) < 0.001) record('soundfont', 'a preset of the bank made no sound');
+if ((await levelWhileHeld(bankPage, bankKeys.press, bankKeys.release, 600)) < 0.001)
+	record('soundfont', 'a preset of the bank made no sound');
 await bankPage.setInputFiles('#sfFile', {
 	name: 'compressed.sf3',
 	mimeType: 'application/octet-stream',
 	buffer: Buffer.from(sampleBank('Compressed', [3, 0])),
 });
 await bankPage.waitForFunction(() => /SF3|Vorbis/.test(document.getElementById('status').value));
-if ((await levelWhileHeld(bankPage, bankKeys.press, bankKeys.release, 400)) < 0.001) record('soundfont', 'the keyboard stopped after a refused SF3');
+if ((await levelWhileHeld(bankPage, bankKeys.press, bankKeys.release, 400)) < 0.001)
+	record('soundfont', 'the keyboard stopped after a refused SF3');
 await bankPage.close();
 const bankFolder = await newPage('ok', {
 	script: (bytes) => {
-		const file = (name, data) => ({ kind: 'file', name, getFile: async () => new File([new Uint8Array(data)], name) });
+		const file = (name, data) => ({
+			kind: 'file',
+			name,
+			getFile: async () => new File([new Uint8Array(data)], name),
+		});
 		window.showDirectoryPicker = async () => ({
 			kind: 'directory',
 			name: 'Banques',
 			entries: async function* () {
-				for (const entry of [file('b-bank.sf2', bytes), file('notes.txt', [65]), file('a-bank.sf2', bytes)]) yield [entry.name, entry];
+				for (const entry of [file('b-bank.sf2', bytes), file('notes.txt', [65]), file('a-bank.sf2', bytes)])
+					yield [entry.name, entry];
 			},
 		});
 	},
@@ -457,11 +524,132 @@ const bankFolder = await newPage('ok', {
 await enableSound(bankFolder);
 await bankFolder.click('#sfFolder');
 await bankFolder.waitForFunction(() => document.querySelectorAll('#sfBank option').length === 3);
-const listedBanks = await bankFolder.evaluate(() => Array.from(document.querySelectorAll('#sfBank option')).map((o) => o.textContent));
+const listedBanks = await bankFolder.evaluate(() =>
+	Array.from(document.querySelectorAll('#sfBank option')).map((o) => o.textContent),
+);
 if (listedBanks.slice(1).join('|') !== 'a-bank.sf2|b-bank.sf2') record('soundfont-folder', `banks: ${listedBanks}`);
 await bankFolder.selectOption('#sfBank', '0');
 await bankFolder.waitForFunction(() => document.getElementById('model').value.startsWith('soundfont:'));
 await bankFolder.close();
+// lien de partage : genere, rouvre, retrouve modele/reglages/morceau ; banque refusee ; MIDI tronque par dichotomie
+const sharePage = await newPage();
+await enableSound(sharePage);
+await sharePage.selectOption('#model', 'dx7');
+const tuned = await sharePage.evaluate(() => {
+	const input = document.querySelector('#controls input[type="range"]');
+	input.value = String(Number(input.min) + Math.round((Number(input.max) - Number(input.min)) * 0.7));
+	input.dispatchEvent(new Event('input'));
+	return { label: input.getAttribute('aria-label'), value: input.value };
+});
+await sharePage.selectOption('#song', { label: 'Ancient mysteries' });
+await sharePage.waitForTimeout(200);
+await sharePage.click('#shareButton');
+await sharePage
+	.waitForFunction(() => document.getElementById('shareLink').value !== '', null, { timeout: 5000 })
+	.catch(() => {});
+const shareLinkText = await sharePage.evaluate(() => document.getElementById('shareLink').value);
+if (!/[?&]p=[dr]/.test(shareLinkText) || shareLinkText.length > 2000)
+	record('share', `link ${shareLinkText.length}: ${shareLinkText.slice(0, 60)}…`);
+const opened = await newPage();
+await opened.goto(shareLinkText);
+await opened.waitForTimeout(400);
+const shared = await opened.evaluate(() => ({
+	model: document.getElementById('model').value,
+	song: document.getElementById('song').value,
+	songTitle: document.getElementById('song').selectedOptions[0]?.text,
+	status: document.getElementById('status').value,
+}));
+const restoredControl = await opened.evaluate(
+	(want) => document.querySelector(`#controls input[aria-label="${want}"]`)?.value,
+	tuned.label,
+);
+if (
+	shared.model !== 'dx7' ||
+	!/^built-in:\d+$/.test(shared.song) ||
+	!/Ancient/.test(shared.songTitle ?? '') ||
+	restoredControl !== tuned.value ||
+	!/Lien ouvert/.test(shared.status)
+)
+	record('share', JSON.stringify({ ...shared, restoredControl }));
+await opened.close();
+await sharePage.close();
+// une banque SoundFont ne voyage pas dans un lien : le partage est refuse et le message le dit
+const refused = await newPage();
+await enableSound(refused);
+await refused.setInputFiles('#sfFile', {
+	name: 'share-bank.sf2',
+	mimeType: 'application/octet-stream',
+	buffer: Buffer.from(sampleBank('Share bank', [2, 4])),
+});
+await refused.waitForFunction(() => document.getElementById('model').value.startsWith('soundfont:'));
+await refused.click('#shareButton');
+const refusal = await refused.evaluate(() => ({
+	status: document.getElementById('status').value,
+	link: document.getElementById('shareLink').value,
+}));
+if (!/SoundFont/.test(refusal.status) || refusal.link !== '') record('share-soundfont', JSON.stringify(refusal));
+await refused.close();
+// un MIDI trop long est tronque par dichotomie pour tenir dans l'URL, et le morceau ouvert porte le marqueur
+const longSmf = (notes) => {
+	const vlq = (value) => {
+		const out = [value & 0x7f];
+		let rest = Math.floor(value / 128);
+		while (rest) {
+			out.unshift((rest & 0x7f) | 0x80);
+			rest = Math.floor(rest / 128);
+		}
+		return out;
+	};
+	const track = [];
+	for (const note of notes) track.push(...vlq(240), 0x90, note, 90, ...vlq(240), 0x80, note, 0);
+	track.push(0, 0xff, 0x2f, 0);
+	return new Uint8Array([
+		0x4d,
+		0x54,
+		0x68,
+		0x64,
+		0,
+		0,
+		0,
+		6,
+		0,
+		0,
+		0,
+		1,
+		0x01,
+		0xe0,
+		(track.length >> 24) & 255,
+		(track.length >> 16) & 255,
+		(track.length >> 8) & 255,
+		track.length & 255,
+		...track,
+	]);
+};
+const trunc = await newPage();
+await enableSound(trunc);
+await trunc.setInputFiles('#file', {
+	name: 'grand.mid',
+	mimeType: 'audio/midi',
+	buffer: Buffer.from(longSmf(Array.from({ length: 240 }, (_, i) => 40 + (i % 40)))),
+});
+await trunc.waitForTimeout(400);
+await trunc.click('#shareButton');
+await trunc
+	.waitForFunction(() => document.getElementById('shareLink').value !== '', null, { timeout: 5000 })
+	.catch(() => {});
+const truncState = await trunc.evaluate(() => ({
+	link: document.getElementById('shareLink').value,
+	status: document.getElementById('status').value,
+}));
+if (!truncState.link || truncState.link.length > 2000 || !/tronqu/i.test(truncState.status))
+	record('share-truncate', `link ${truncState.link.length}: ${truncState.status}`);
+const truncOpened = await newPage();
+await truncOpened.goto(truncState.link);
+await truncOpened.waitForTimeout(400);
+const truncTitle = await truncOpened.evaluate(() => document.getElementById('song').selectedOptions[0]?.text ?? '');
+if (!/…$/.test(truncTitle)) record('share-truncate', `opened song: "${truncTitle}"`);
+await truncOpened.close();
+await trunc.close();
 
 // point 4 : MIDI simulé — note-on/off, vélocité, sustain, all-notes-off, déconnexion
 const midiPage = await newPage();
@@ -597,7 +785,8 @@ for (const [layout, labels, octave] of [
 await lang.selectOption('#layout', 'azerty');
 await lang.selectOption('#lang', 'de');
 await lang.reload();
-if ((await lang.evaluate(() => document.getElementById('layout').value)) !== 'azerty') record('layout', 'choice lost on reload');
+if ((await lang.evaluate(() => document.getElementById('layout').value)) !== 'azerty')
+	record('layout', 'choice lost on reload');
 await lang.selectOption('#layout', 'auto');
 await lang.selectOption('#lang', 'de');
 await lang.reload();
@@ -614,7 +803,8 @@ const modes0 = await simple.evaluate(() => ({
 	panic: document.getElementById('panic').textContent,
 }));
 if (!modes0.simpleShown || !modes0.complexHidden || modes0.tab !== 'true') record('modes', JSON.stringify(modes0));
-if (modes0.picks !== 8 || modes0.dice !== 1) record('modes', `random draw: ${modes0.picks} models + ${modes0.dice} dice`);
+if (modes0.picks !== 8 || modes0.dice !== 1)
+	record('modes', `random draw: ${modes0.picks} models + ${modes0.dice} dice`);
 if (!/Coupure d’urgence/.test(modes0.panic ?? '')) record('modes', `emergency button label: ${modes0.panic}`);
 await simple.click('#audio');
 await simple.waitForFunction(() => window.__contexts.at(-1)?.state === 'running');

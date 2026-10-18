@@ -942,6 +942,174 @@ function saveBlob(blob: Blob, name: string): void {
 	setTimeout(() => URL.revokeObjectURL(url), 10_000);
 	say('recExported', { name, size: formatSize(blob.size) });
 }
+/**
+ * The share link: the chosen model with its settings and the selected song, JSON-serialised,
+ * deflated and base64url-encoded into one URL parameter. A SoundFont bank is refused (its
+ * samples are the user's own file and cannot travel); an imported MIDI is embedded, and when
+ * the URL grows past the safe length a bisection finds how many notes still fit.
+ */
+const SHARE_LIMIT = 2000;
+const streams = globalThis as unknown as {
+	CompressionStream?: new (format: string) => CompressionStream;
+	DecompressionStream?: new (format: string) => DecompressionStream;
+};
+type SongPayload = ['b', number] | ['f', string, MidiEvent[], number];
+interface SharePayload {
+	m: string;
+	c: [string, number | boolean][];
+	o?: string;
+	v?: string;
+	s?: SongPayload;
+}
+const b64url = (bytes: Uint8Array): string => {
+	let binary = '';
+	for (const byte of bytes) binary += String.fromCharCode(byte);
+	return btoa(binary).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '');
+};
+const fromB64url = (text: string): Uint8Array => {
+	const b64 = text.replaceAll('-', '+').replaceAll('_', '/');
+	const binary = atob(b64 + '='.repeat((4 - (b64.length % 4)) % 4));
+	const out = new Uint8Array(binary.length);
+	for (let i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i);
+	return out;
+};
+/** 'd' when deflated, 'r' when the browser has no CompressionStream: the payload says which */
+async function packShare(state: SharePayload): Promise<string> {
+	const bytes = new TextEncoder().encode(JSON.stringify(state));
+	const compressor = streams.CompressionStream;
+	if (!compressor) return 'r' + b64url(bytes);
+	const stream = new Blob([bytes]).stream().pipeThrough(new compressor('deflate-raw'));
+	return 'd' + b64url(new Uint8Array(await new Response(stream).arrayBuffer()));
+}
+async function unpackShare(payload: string): Promise<SharePayload> {
+	const bytes = fromB64url(payload.slice(1));
+	let data = bytes;
+	if (payload[0] === 'd') {
+		const decompressor = streams.DecompressionStream;
+		if (!decompressor) throw new Error('deflate-raw needed but this browser has no DecompressionStream');
+		const stream = new Blob([bytes]).stream().pipeThrough(new decompressor('deflate-raw'));
+		data = new Uint8Array(await new Response(stream).arrayBuffer());
+	}
+	return JSON.parse(new TextDecoder().decode(data)) as SharePayload;
+}
+const shareUrl = async (state: SharePayload): Promise<string> =>
+	`${location.href.split('?')[0]}?p=${await packShare(state)}`;
+const shareSong = (entry: Entry, events: MidiEvent[], kept: number, truncated: boolean): SongPayload => [
+	'f',
+	entry.kind === 'take' ? '' : truncated ? `${entry.title()}…` : entry.title(),
+	events.slice(0, kept),
+	Math.max(events[Math.max(0, kept - 1)].time, 0.2),
+];
+async function generateShare(): Promise<void> {
+	if (instrument.info.id.startsWith('soundfont:')) {
+		// the bank's samples are the user's own files: they cannot travel inside a link
+		shareLink.value = '';
+		shareCopy.disabled = true;
+		return say('shareSoundfont');
+	}
+	const base: Omit<SharePayload, 's'> = {
+		m: instrument.info.id,
+		c: instrument.controls.map((control) => [control.id, control.get()] as [string, number | boolean]),
+	};
+	if (octave.value !== '4') base.o = octave.value;
+	if (element<HTMLSelectElement>('songVoice').value === 'standard') base.v = 'standard';
+	const entry = entryOf(songSelect.value);
+	let state: SharePayload = base;
+	let notes = 0;
+	let truncated = false;
+	if (entry?.kind === 'built-in') state = { ...base, s: ['b', Number(entry.key.slice('built-in:'.length))] };
+	else if (entry) {
+		const song = entry.song();
+		const whole = await shareUrl({ ...base, s: shareSong(entry, song.events, song.events.length, false) });
+		if (whole.length <= SHARE_LIMIT) state = { ...base, s: shareSong(entry, song.events, song.events.length, false) };
+		else {
+			// bisection over the kept notes: the longest song whose link still fits
+			truncated = true;
+			let low = 0;
+			let high = song.events.length;
+			while (low + 1 < high) {
+				const middle = (low + high) >> 1;
+				const candidate = await shareUrl({ ...base, s: shareSong(entry, song.events, middle, true) });
+				if (candidate.length <= SHARE_LIMIT) low = middle;
+				else high = middle;
+			}
+			notes = low;
+			state = low ? { ...base, s: shareSong(entry, song.events, low, true) } : base;
+			if (!low) truncated = false; // not even one note fits: settings only
+		}
+	}
+	try {
+		const link = await shareUrl(state);
+		shareLink.value = link;
+		shareCopy.disabled = !link;
+		say(truncated ? 'shareTruncated' : 'shareOk', { length: link.length, notes: notes || entry?.song().events.length || 0 });
+	} catch (error) {
+		say('shareFail', { error: String(error) });
+	}
+}
+/** apply a shared link at startup: the model and its settings, the octave, the song */
+async function applySharedLink(): Promise<void> {
+	const payload = new URLSearchParams(location.search).get('p');
+	if (!payload) return;
+	try {
+		const state = await unpackShare(payload);
+		if (state.m && !state.m.startsWith('soundfont:') && definitionOf(state.m)) {
+			model.value = state.m;
+			choose();
+			if (state.m === instrument.info.id)
+				for (const [id, value] of state.c)
+					(instrument.controls.find((control) => control.id === id) as
+						| { set(value: number | boolean): void }
+						| undefined)?.set(value);
+		}
+		if (state.o) {
+			octave.value = String(Math.max(0, Math.min(7, Number(state.o) || 0)));
+			drawKeyboard();
+		}
+		if (state.v === 'standard') element<HTMLSelectElement>('songVoice').value = 'standard';
+		let loaded = '';
+		if (state.s?.[0] === 'b') {
+			const key = `built-in:${state.s[1]}`;
+			if (entryOf(key)) {
+				songSelect.value = key;
+				loaded = entryOf(key)!.title();
+			}
+		} else if (state.s) {
+			const [, name, events, duration] = state.s;
+			const received: Entry = {
+				key: `file:${++userCount}`,
+				kind: 'file',
+				title: () => name || t('sharedSong'),
+				song: () => ({ events, duration }),
+			};
+			userEntries = [received, ...userEntries];
+			buildSongList();
+			songSelect.value = received.key;
+			loaded = received.title();
+		}
+		controls();
+		paintExport();
+		say('shareLoaded', { name: loaded || t('noSharedSong'), model: instrument.info.name });
+	} catch (error) {
+		say('shareFail', { error: String(error) });
+	}
+}
+const shareLink = element<HTMLInputElement>('shareLink');
+const shareCopy = element<HTMLButtonElement>('shareCopy');
+element('shareButton').addEventListener('click', () => void generateShare(), options);
+shareCopy.addEventListener(
+	'click',
+	() => {
+		navigator.clipboard
+			?.writeText(shareLink.value)
+			.then(() => say('shareCopied'))
+			.catch(() => {
+				shareLink.select();
+				say('shareNoClipboard');
+			});
+	},
+	options,
+);
 const noteCount = (events: readonly MidiEvent[]): number =>
 	events.filter((event) => event.status === 0x90 && event.data2 > 0).length;
 /** keep a message played now while a take is being recorded */
@@ -1160,6 +1328,7 @@ layoutSelect.addEventListener(
 	options,
 );
 applyLanguage(initialLang());
+void applySharedLink();
 // Chromium can name the keys of the real layout (Dvorak, Bépo, Swiss...); elsewhere the guess above applies
 void (navigator as Navigator & { keyboard?: { getLayoutMap(): Promise<typeof layoutMap> } }).keyboard
 	?.getLayoutMap()

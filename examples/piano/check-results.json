@@ -18,13 +18,13 @@
 		{
 			"id": "tandy",
 			"name": "Tandy SN76489 — Tandy 1000, IBM PCjr",
-			"peak": 0.1271,
+			"peak": 0.1191,
 			"controls": 7
 		},
 		{
 			"id": "sid",
 			"name": "MOS 6581 SID — Commodore 64",
-			"peak": 0.2457,
+			"peak": 0.2652,
 			"controls": 9
 		},
 		{
@@ -84,7 +84,7 @@
 		{
 			"id": "nes-apu",
 			"name": "NES APU NTSC — Nintendo NES / Famicom (NTSC)",
-			"peak": 0.0736,
+			"peak": 0.0946,
 			"controls": 8
 		},
 		{
@@ -144,7 +144,7 @@
 		{
 			"id": "opl3",
 			"name": "OPL3 — PC (Sound Blaster Pro 2 / 16)",
-			"peak": 0.1165,
+			"peak": 0.1191,
 			"controls": 6
 		},
 		{
@@ -174,13 +174,13 @@
 		{
 			"id": "m1",
 			"name": "Korg M1",
-			"peak": 0.0854,
+			"peak": 0.0775,
 			"controls": 8
 		},
 		{
 			"id": "gs1",
 			"name": "Yamaha GS-1",
-			"peak": 0.0706,
+			"peak": 0.0667,
 			"controls": 5
 		},
 		{
@@ -222,7 +222,7 @@
 		{
 			"id": "la-synth",
 			"name": "Structure LA",
-			"peak": 0.0555,
+			"peak": 0.0542,
 			"controls": 5
 		},
 		{
@@ -240,13 +240,13 @@
 		{
 			"id": "simple:Piano",
 			"name": "Piano",
-			"peak": 0.0212,
+			"peak": 0.0207,
 			"controls": 1
 		},
 		{
 			"id": "simple:Electric piano",
 			"name": "Electric piano",
-			"peak": 0.0105,
+			"peak": 0.0106,
 			"controls": 1
 		},
 		{
@@ -258,13 +258,13 @@
 		{
 			"id": "simple:Guitar",
 			"name": "Guitar",
-			"peak": 0.0098,
+			"peak": 0.0099,
 			"controls": 1
 		},
 		{
 			"id": "simple:Bass",
 			"name": "Bass",
-			"peak": 0.0117,
+			"peak": 0.0113,
 			"controls": 1
 		},
 		{

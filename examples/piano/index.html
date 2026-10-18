@@ -41,6 +41,9 @@ h2{font-size:1.2rem;margin:28px 0 8px}.chips{display:flex;gap:8px;flex-wrap:wrap
 <p class="meta" data-i18n="exportHelp"></p>
 <div class="toolbar"><label><span data-i18n="exportFormat"></span> <select id="exportFormat"><option value="flac">FLAC</option><option value="opus">Opus</option><option value="wav">WAV</option></select></label><button id="exportButton"></button></div>
 <progress id="exportProgress" value="0" max="1" hidden></progress></section>
+<section class="panel" id="share" aria-labelledby="share-title"><h2 id="share-title" data-i18n="shareTitle"></h2>
+<p class="meta" data-i18n="shareHelp"></p>
+<div class="toolbar"><button id="shareButton" data-i18n="shareButton"></button><button id="shareCopy" data-i18n="shareCopy" disabled></button><input id="shareLink" type="text" readonly size="48" data-i18n-aria="shareLinkAria"></div></section>
 <div class="toolbar"><label><span data-i18n="octave"></span> <input id="octave" type="number" min="0" max="7" value="4"></label><label><span data-i18n="layout"></span> <select id="layout"><option value="auto" data-i18n="layoutAuto"></option><option value="qwerty">QWERTY</option><option value="azerty">AZERTY</option><option value="qwertz">QWERTZ</option></select></label><button id="midi" data-i18n="midiConnect"></button><label><span data-i18n="midiInput"></span> <select id="midiInput"><option value=""></option></select></label><button id="reset" data-i18n="reset"></button></div>
 <section class="panel" id="recorder" aria-labelledby="rec-title"><h2 id="rec-title" data-i18n="recTitle"></h2>
 <p class="meta" data-i18n="recHelp"></p>
