@@ -1,6 +1,6 @@
 {
 	"name": "@datamoc/mwg-retro-audio",
-	"version": "0.2.0",
+	"version": "0.3.0",
 	"description": "Historical synthesizers and sound chips for mwg games, and a universal player for pre-MP3 electronic music: pure TypeScript (YM2149/AY, SID, NES APU, SN76489, YM2612, YM2151, OPL2/OPL3, DX7 and other historical synths) on the native Web Audio API, with players for YM, VGM/VGZ, NSF/NSFE, PSID, SPC, MIDI/XMI, MOD/XM/S3M/IT, DRO, IMF, CMF, HSC, RAD, ROL, D00, SCI, WAV and VOC files",
 	"type": "module",
 	"license": "MPL-2.0",

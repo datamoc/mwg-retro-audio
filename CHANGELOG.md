@@ -3,7 +3,14 @@
 Les versions suivent [SemVer](https://semver.org/lang/fr/). Tant que le numéro majeur est 0, une version mineure
 peut changer une interface.
 
-## 0.2.0 — à publier avec `@datamoc/mwg` 0.47.0
+## 0.3.0 — ajout de `playTone`
+
+- **`playTone`** (`@datamoc/mwg-retro-audio/sfx`) : joue une fréquence avec forme d’onde, durée, volume et
+  transposition en demi-tons optionnelle via Web Audio.
+
+---
+
+## 0.2.0 — `@datamoc/mwg` 0.47.0
 
 Le paquet exige maintenant `@datamoc/mwg` ≥ 0.47.0 (pair facultatif) : les cœurs empaquetés s'appuient sur
 `factorySource` de l'hôte hors fil principal, apporté par mwg 0.47.0.
