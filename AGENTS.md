@@ -40,6 +40,9 @@ Before publishing a version of this package, first publish or update `@datamoc/m
 dependency range and verify that users can update both packages without getting stuck on an inconvenient or incompatible
 version combination.
 
+After staging a package on npmjs.com, inform the user of the staged version and wait for their approval. A script or
+automated workflow must never approve or validate the publication; the final npm approval requires the user's own 2FA.
+
 ## Licensing & Assets
 
 Preserve MPL-2.0 notices and the separate GPL boundary around `vendor/hatari-ym/`. Do not add proprietary sample ROMs or ROM-derived samples. Document fixture provenance and licensing.
