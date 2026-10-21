@@ -34,6 +34,12 @@ Name tests `tests/*.test.ts` and use `node:test` with Node assertions. Add focus
 
 This folder has no accessible Git history, so no existing commit convention can be established. Use concise, imperative commit subjects describing the affected component. PRs should explain behavior changes, link relevant issues, list validation results, and document fidelity limitations in `CONFORMANCE.md` when applicable.
 
+## Release Guidelines
+
+Before publishing a version of this package, first publish or update `@datamoc/mwg` to a compatible version. Check the
+dependency range and verify that users can update both packages without getting stuck on an inconvenient or incompatible
+version combination.
+
 ## Licensing & Assets
 
 Preserve MPL-2.0 notices and the separate GPL boundary around `vendor/hatari-ym/`. Do not add proprietary sample ROMs or ROM-derived samples. Document fixture provenance and licensing.
