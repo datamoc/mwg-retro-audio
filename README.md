@@ -77,7 +77,7 @@ chips and their clocks inside; decoding needs nothing but this package (`docs/MW
 
 ## With mwg (`@datamoc/mwg`)
 
-The optional integration targets **mwg 0.52.x**. See [MWG usage](docs/MWG-USAGE.md) for playback choices and examples.
+The optional integration targets **@datamoc/mwg 0.52.1 and later in the 0.52 series** (`@datamoc/mw_games` is its compatibility package). See [MWG usage](docs/MWG-USAGE.md) for playback choices and examples.
 `@datamoc/mwg-retro-audio/mwg`: `retroPlayableFactory` (a `Playable` for `Music`'s crossfades), `retroBusLoader` and
 `renderTrack` (a `LoadedTrack` with the loop region for `Channel` / `AudioBus`), and `retroStreamLoader` (BGM/BGS
 through `AudioBus` without rendering a whole buffer). It also provides `retroBlockSource` / `retroLoopRegion`
@@ -88,6 +88,8 @@ with `toMwgSfxDefinition` boarding our definitions through mwg's `SfxBank`), and
 (mwg's player-facing `AudioSettings` mapped onto load options and the hardware output stage). `docs/MWG-REQUIREMENTS.md`
 tracks what each side owns; `docs/MWL-PROPOSAL.md` proposes the MWL evolution that lets a character, its animations,
 scripts, effects and music travel as one file.
+
+The DX7 MIDI engine can exceed the -1 to 1 output range, especially with its default voice when no SysEx bank is loaded. Use MWG 0.52.1 render options `targetPeak` and optionally `targetRms` to normalize the result, or reduce `gain` and check the resulting peak before playback or export to avoid clipping. Engine loudness differs; match levels for the material being played.
 
 ## Exporting a render
 

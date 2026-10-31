@@ -2,8 +2,7 @@
 
 Paquet `@datamoc/mwg-retro-audio` (anciennement `mw-retro-audio`, développé dans
 `airball/mw-retro-audio`), module audio rétro autonome de la famille **mwg**
-(`@datamoc/mwg`, dépendance pair optionnelle, liée en développement par
-`file:../mwg`). Deux vocations, un seul moteur : les fichiers sont transformés en
+(`@datamoc/mwg`, dépendance pair optionnelle, installée en développement depuis npm). Deux vocations, un seul moteur : les fichiers sont transformés en
 écritures de registres datées, les puces les rendent en échantillons, le pilote
 Web Audio les fait entendre.
 
@@ -90,7 +89,7 @@ Depuis le dossier de développement `airball/` :
 ## 7. Vérification
 
 ```sh
-npm install     # lie @datamoc/mwg -> ../mwg
+npm install     # installe notamment @datamoc/mwg 0.52.1
 npm run check   # tsc --noEmit
 npm test        # node --import tsx --test "tests/**/*.test.ts"
 npm run build   # dist/

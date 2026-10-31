@@ -3,6 +3,12 @@
 Les versions suivent [SemVer](https://semver.org/lang/fr/). Tant que le numéro majeur est 0, une version mineure
 peut changer une interface.
 
+## 0.6.1 - Intégration mwg 0.52.1 et niveaux MIDI
+
+- **Pair mwg `^0.52.1`** : testé avec la version publiée, qui fournit `targetPeak` et `targetRms` pour ajuster les niveaux des rendus MIDI.
+- **Enregistrement des moteurs sur worker** : une erreur explicite nomme `engines` ou `coreSource` lorsque l'argument est absent et indique l'export correspondant.
+- **DX7** : la documentation signale les crêtes possibles au-delà de +/-1, en particulier avec la voix par défaut sans banque SysEx. Un test vérifie la normalisation sur les rendus direct et worker.
+
 ## 0.6.0 — mwg 0.52, composition et rendu dans un worker
 
 - **Pair mwg `^0.52.0`** : 0.52 accepte le cœur d'un moteur en texte source et convertit des notes horodatées en

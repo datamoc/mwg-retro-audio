@@ -14,6 +14,10 @@ export function registerRetroWorkerMidiEngines(
 	engines: Readonly<Record<string, MidiSynthFactory>>,
 	coreSource: (name: string) => string | undefined,
 ): string[] {
+	if (!engines || typeof engines !== 'object')
+		throw new TypeError('registerRetroWorkerMidiEngines: engines must be provided (use retroMidiEngines)');
+	if (typeof coreSource !== 'function')
+		throw new TypeError('registerRetroWorkerMidiEngines: coreSource must be provided (use retroCoreSource)');
 	const hosted: string[] = [];
 	for (const [name, factory] of Object.entries(engines)) {
 		const source = coreSource(name);

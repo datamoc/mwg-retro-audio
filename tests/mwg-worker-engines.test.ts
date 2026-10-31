@@ -40,10 +40,33 @@ function tinyMidi(): Uint8Array {
 const RATE = 8000;
 const core = (name: string): string | undefined => cores.get(name);
 
+test('missing worker registration arguments name the required exports', () => {
+	const call = registerRetroWorkerMidiEngines as unknown as (...args: unknown[]) => string[];
+	assert.throws(() => call(() => {}), /engines.*retroMidiEngines/);
+	assert.throws(() => call(() => {}, retroMidiEngines), /coreSource.*retroCoreSource/);
+});
+
 test('a worker engine is registered with the exact text of its core', () => {
 	const registered = new Map<string, string | undefined>();
 	registerRetroWorkerMidiEngines((name, _factory, worker) => registered.set(name, worker), retroMidiEngines, core);
 	for (const name of Object.keys(retroMidiEngines)) assert.equal(registered.get(name), cores.get(name));
+});
+
+test('MWG normalizes a DX7 worker render to the requested peak', async () => {
+	registerRetroWorkerMidiEngines(registerMidiSynth, retroMidiEngines, core);
+	try {
+		const options = { synth: 'retro:dx7', sampleRate: RATE, targetPeak: 0.4 };
+		const direct = renderMidiToBuffer(parseMidi(tinyMidi()), options);
+		const worker = await renderMidiToBufferAsync(tinyMidi(), options);
+		assert.deepEqual(worker.left, direct.left);
+		assert.deepEqual(worker.right, direct.right);
+		let peak = 0;
+		for (const channel of [worker.left, worker.right])
+			for (const sample of channel) peak = Math.max(peak, Math.abs(sample));
+		assert.ok(Math.abs(peak - 0.4) < 1e-6);
+	} finally {
+		for (const name of Object.keys(retroMidiEngines)) unregisterMidiSynth(name);
+	}
 });
 
 test('only engines with a packaged core become worker engines', () => {

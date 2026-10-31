@@ -1,13 +1,13 @@
 # Using retro audio with MWG
 
-This integration targets `@datamoc/mwg` **0.52.x** (`^0.52.0`), the published version checked on 31 October 2026.
+This integration targets `@datamoc/mwg` **0.52.1 and later in the 0.52 series** (`^0.52.1`), the published version checked on 31 October 2026.
 Install both packages in a consuming application:
 
 ```sh
-npm install @datamoc/mwg@^0.52.0 @datamoc/mwg-retro-audio
+npm install @datamoc/mwg@^0.52.1 @datamoc/mwg-retro-audio
 ```
 
-Development keeps `file:../mwg`; the sibling checkout and its built `dist` must be current. MWG remains an optional
+Development tests against the published `@datamoc/mwg` 0.52.1 package. MWG remains an optional
 peer: the retro adapters import only its types, so standalone chip playback does not need the framework.
 
 ## Choose the playback path
