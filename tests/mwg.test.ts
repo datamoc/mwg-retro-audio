@@ -1,6 +1,7 @@
 import { test, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+	AudioBus,
 	Music,
 	StreamChannel,
 	onMidiSynthFallback,
@@ -11,6 +12,7 @@ import {
 	softenCutoff,
 	unregisterMidiSynth,
 	type AudioSettingsData,
+	type BusLoadContext,
 	type MidiSynthFallback,
 } from '@datamoc/mwg/audio';
 import { FakeAudioContext } from '@datamoc/mwg/testing';
@@ -18,6 +20,7 @@ import {
 	renderTrack,
 	retroBlockSource,
 	retroBusLoader,
+	retroStreamLoader,
 	retroLoadFor,
 	retroLoopRegion,
 	retroOutputFor,
@@ -157,6 +160,102 @@ test('renderTrack gives an AudioBuffer with the loop region of the file; the bus
 	assert.ok(ok && ok.loop && ok.loop.end > 0.9);
 	assert.equal(await loader('bgm', 'bad.ym'), null);
 	assert.equal(await loader('se', 'absent.ym'), null);
+});
+
+test('retroStreamLoader returns independent, finite sources with file loops and progress', async () => {
+	const progress: number[] = [];
+	const context: BusLoadContext = {
+		signal: new AbortController().signal,
+		progress: (fraction) => progress.push(fraction),
+		track: { name: 'town.ym', volume: 100, pitch: 100, pan: 0, pos: 0 },
+	};
+	const loader = retroStreamLoader({ context: { sampleRate: 8000 }, fetchBytes: async () => song() });
+	const first = await loader('bgm', 'town.ym', context);
+	assert.ok(first);
+	assert.deepEqual(progress, [0, 0.5, 1]);
+	assert.deepEqual(first.loop, { start: 0.2, end: 1 });
+	assert.equal(first.source.sampleRate, 8000);
+	assert.equal(first.source.length, 8000);
+	const second = await loader('bgs', 'town.ym', context);
+	assert.ok(second);
+	const left = new Float32Array(9000);
+	assert.equal(first.source.read(left, new Float32Array(9000), 0, 9000), 8000);
+	assert.ok(left.some((value) => Math.abs(value) > 1e-4));
+	assert.equal(first.source.read(left, left, 0, 1), 0);
+	assert.equal(second.source.read(left, new Float32Array(9000), 0, 9000), 8000);
+});
+
+test('retro loaders discard cancelled requests before parsing or allocating buffers', async () => {
+	for (const streamed of [false, true]) {
+		const abort = new AbortController();
+		const progress: number[] = [];
+		const context: BusLoadContext = {
+			signal: abort.signal,
+			progress: (fraction) => progress.push(fraction),
+			track: { name: 'town.ym', volume: 100, pitch: 100, pan: 0, pos: 0 },
+		};
+		let calls = 0;
+		const options = {
+			context: { sampleRate: 8000, createBuffer: () => assert.fail('cancelled load allocated a buffer') },
+			fetchBytes: async (_path: string, signal?: AbortSignal) => {
+				calls++;
+				assert.equal(signal, abort.signal);
+				abort.abort();
+				return song();
+			},
+		};
+		const loader = streamed ? retroStreamLoader(options) : retroBusLoader(options);
+		assert.equal(await loader('bgm', 'town.ym', context), null);
+		assert.deepEqual(progress, [0]);
+		assert.equal(await loader('bgm', 'town.ym', context), null);
+		assert.equal(calls, 1, 'already aborted request never fetches');
+	}
+});
+
+test('retroStreamLoader declines excluded, missing and invalid assets', async () => {
+	const context: BusLoadContext = {
+		signal: new AbortController().signal,
+		progress() {},
+		track: { name: '', volume: 100, pitch: 100, pan: 0, pos: 0 },
+	};
+	const loader = retroStreamLoader({
+		context: { sampleRate: 8000 },
+		locate: (_kind, name) => (name === 'excluded' ? null : name),
+		fetchBytes: async (path) => {
+			assert.notEqual(path, 'excluded');
+			if (path === 'missing') throw new Error('missing');
+			return new Uint8Array(4);
+		},
+	});
+	for (const name of ['excluded', 'missing', 'invalid']) assert.equal(await loader('bgm', name, context), null);
+});
+
+test('AudioBus plays retro streams, loops and falls through for other assets', async () => {
+	mock.timers.enable({ apis: ['setTimeout'] });
+	const context = new FakeAudioContext(8000);
+	let buffered = 0;
+	const bus = new AudioBus(context.asContext(), {
+		stream: retroStreamLoader({
+			context,
+			locate: (_kind, name) => (name.endsWith('.ym') ? name : null),
+			fetchBytes: async () => song(),
+		}),
+		load: async () => {
+			buffered++;
+			return null;
+		},
+	});
+	try {
+		await bus.playBgm({ name: 'town.ym' });
+		assert.equal(buffered, 0);
+		assert.ok(context.sources.length > 1, 'short chunks are queued across the file loop');
+		assert.ok(context.sources.some((source) => source.buffer?.getChannelData(0).some((v) => Math.abs(v) > 1e-4)));
+		await bus.playBgs({ name: 'rain.ogg' });
+		assert.equal(buffered, 1);
+	} finally {
+		bus.stopAll();
+		mock.timers.reset();
+	}
 });
 
 test('retroBlockSource streams through a mwg StreamChannel and seeks where a sequential read lands', () => {

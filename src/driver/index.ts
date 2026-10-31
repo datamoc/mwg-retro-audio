@@ -23,6 +23,15 @@ export {
 export { RetroStream, type RetroStreamOptions } from './RetroStream.ts';
 export { createToneStream, type ToneAudioBridge } from './tone.ts';
 export { compareAudio, compareSpectra, type AudioComparison } from './Compare.ts';
+export {
+	bandShapeDistance,
+	estimateTempo,
+	fft,
+	meanBandShape,
+	pitchClassProfile,
+	spectralDistance,
+} from './analysis.ts';
+export { scoreRendering, type Scorecard } from './scorecard.ts';
 export { encodeFlac, md5, type FlacOptions } from './flac.ts';
 export { muxOggOpus, oggCrc, type OggOpusOptions } from './ogg.ts';
 export {

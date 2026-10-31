@@ -4,3 +4,4 @@ export { AyDriver, SnDriver, NesDriver, SidDriver, driverFor, type ChipDriver, t
 export { importSfx, type ImportOptions } from './import.ts';
 export { SoundtrackPlayer, renderSoundtrack, type SoundtrackOptions } from './soundtrack.ts';
 export { playTone, type ToneOptions } from './tone.ts';
+export { DrumMachine, type DrumHit, type DrumMachineOptions, type DrumVoice } from './DrumMachine.ts';

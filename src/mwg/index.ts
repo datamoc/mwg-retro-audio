@@ -1,5 +1,12 @@
 export { RetroPlayable, retroPlayableFactory, type RetroPlayableOptions } from './RetroPlayable.ts';
-export { renderTrack, retroBusLoader, type RenderTrackOptions, type RetroBusLoaderOptions } from './busLoader.ts';
+export {
+	renderTrack,
+	retroBusLoader,
+	retroStreamLoader,
+	type RenderTrackOptions,
+	type RetroBusLoaderOptions,
+	type RetroStreamLoaderOptions,
+} from './busLoader.ts';
 export { retroBlockSource, retroLoopRegion, type RetroBlockSourceOptions } from './blockSource.ts';
 export {
 	retroMidiEngines,

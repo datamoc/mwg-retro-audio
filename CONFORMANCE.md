@@ -278,3 +278,32 @@ du dépôt (**T**/**H**).
 - **Données issues de ROM (D-50, M1)** : les ROM ne sont jamais embarquées ni lues par le paquet. `tools/rom-analysis` (Python, hors paquet) lit les dumps de l'utilisateur et n'en tire que des **descripteurs paramétriques** : amplitudes de 16 harmoniques moyennées sur des groupes de trames, partiels d'attaque (rapport, amplitude, décroissance) et rafale de bruit. Aucun échantillon, aucune table d'onde, aucun octet de ROM n'entre dans `src/` ; une table d'onde complète serait refusée par cette règle.
 - **Licences** : MPL-2.0 pour ce paquet ; aucun code GPL ni aucune ROM n'y figure. Les lecteurs `hsc.ts`, `d00.ts`, `rol.ts` réécrivent le comportement de lecteurs libres d'AdPlug (LGPL-2.1-or-later, rappelé dans leurs en-têtes) ; `rad.ts` porte le lecteur du domaine public de Shayde / Reality ; `Dx7.ts` reprend des tables numériques de MSFA (Apache-2.0) : voir `NOTICE`. Le backend exact Hatari (GPL-2.0+)
   reste un paquet séparé branché à l'exécution. Munt (GPL-3) n'est plus lié au paquet : il n'est utilisé qu'hors-ligne pour l'analyse.
+
+## Native speech
+
+`BrowserSpeech` plays browser/OS voices directly; available languages and quality
+depend on the host. It cannot return PCM or route audio through Web Audio.
+Cancellation affects the page's shared speech queue. `localOnly` filters out
+voices marked remote by the browser. The separate Node Windows adapter uses
+installed SAPI desktop voices to produce PCM; its voice list can differ from the
+browser's. Neither native adapter provides timed singing. Formant synthesis and
+singing remain approximations; native dialogue does not improve those paths.
+
+`/speech/kokoro` is an opt-in adapter to separately installed kokoro-js 1.2.1,
+using Apache-2.0 Kokoro-82M-v1.0 ONNX weights. The JavaScript wrapper supports
+US/British English; the library adds French Siwis through a French IPA callback
+and the same model's lower-level ONNX interface. Outputs are mono 24 kHz
+PCM. CPU inference and five English voice/vocoder WAV pairs were exercised locally;
+browser inference and subjective sound quality were not validated. The runtime
+and model are not included in the core library. Long lines are split into short
+word-bounded segments; pathological phonetic expansion can still reach the
+upstream token limit. See docs/SPEECH.md for measured timings and dependency
+limitations. Kitten Nano 0.8 int8 has a separate comparison renderer only.
+
+French Siwis was rendered locally with accented/nasal words, punctuation and
+numbers, plus a vocoder cue, using Python phonemizer 3.4.0 and espeakng-loader
+0.2.4 in a separate process. This does not establish perceptual quality or
+phonetic accuracy. One French voice is available; no French browser phonemizer
+is bundled. Voice data is pinned and SHA-256 checked, held in memory, or supplied
+by the host for offline use. French phoneme sequences above the model limit
+reject instead of being truncated. The same model was also exercised in English.

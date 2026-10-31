@@ -25,3 +25,25 @@ Test data
 
 Separate programs, not included
   Hatari (GPL-2.0-or-later) through the separate package "hatari-ym".
+
+Optional speech runtimes and model downloads, not included in the core
+  Kokoro-82M-v1.0 by hexgrad, Apache-2.0: https://huggingface.co/hexgrad/Kokoro-82M
+  kokoro-js by hexgrad and contributors, Apache-2.0: https://github.com/hexgrad/kokoro
+  The optional runtime has its own dependency notices, including its eSpeak-NG phonemizer.
+  No model weights are embedded in this package. Preserve upstream license and attribution files when self-hosting.
+
+src/speech/kokoroFrench.ts
+  French IPA substitutions adapted to TypeScript from hexgrad/misaki's EspeakG2P, Apache-2.0:
+  https://github.com/hexgrad/misaki/blob/main/misaki/espeak.py
+  The ff_siwis profile is downloaded from Kokoro-82M-v1.0-ONNX (Apache-2.0), revision 4685882.
+  Upstream credits the SIWIS French dataset (CC BY 4.0): https://datashare.ed.ac.uk/handle/10283/2353
+  https://huggingface.co/hexgrad/Kokoro-82M#creative-commons-attribution
+
+src/node/frenchPhonemizer.ts
+  Invokes separately installed Python phonemizer and eSpeak-NG via espeakng-loader in an external process.
+  These GPL components and their language data are not linked into or redistributed with this package.
+
+tools/render-kitten-voice.py
+  Token vocabulary and model-input recipe adapted from KittenML/KittenTTS 0.8 (Apache-2.0):
+  https://github.com/KittenML/KittenTTS/blob/0.8/kittentts/onnx_model.py
+  Model and voice files are downloaded separately from KittenML/kitten-tts-nano-0.8-int8 (Apache-2.0).

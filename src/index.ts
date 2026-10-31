@@ -13,3 +13,5 @@ export * from './players/Player.ts';
 export { PSGVoice } from './players/PSGVoice.ts';
 export { TrackerPlayer, type TrackerStep } from './players/TrackerPlayer.ts';
 export * from './sfx/index.ts';
+export * from './speech/index.ts';
+export * from './compose/index.ts';

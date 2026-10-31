@@ -9,6 +9,8 @@ La [synthèse simple](docs/SIMPLE-SYNTH.md) propose neuf profils d'instruments,
 des accords et une API de notes avec vélocité et sustain.
 Les [imports ciblés et mesures de bundles](docs/BUNDLES.md) permettent de choisir
 un profil ou une puce sans embarquer tout le catalogue.
+Les [voix natives du navigateur et de Windows](docs/SPEECH.md) permettent de lire
+les dialogues sans modèle à télécharger et de rendre des voix en PCM sous Windows.
 Le [piano interactif](examples/piano/README.md) joue tous les modèles du catalogue —
 profils simples, PSG, puces à registres et synthétiseurs historiques — à la souris,
 au clavier de l'ordinateur ou avec un clavier MIDI via Web MIDI.
@@ -75,9 +77,11 @@ chips and their clocks inside; decoding needs nothing but this package (`docs/MW
 
 ## With mwg (`@datamoc/mwg`)
 
+The optional integration targets **mwg 0.49.x**. See [MWG usage](docs/MWG-USAGE.md) for playback choices and examples.
 `@datamoc/mwg-retro-audio/mwg`: `retroPlayableFactory` (a `Playable` for `Music`'s crossfades), `retroBusLoader` and
-`renderTrack` (a `LoadedTrack` with the loop region for `Channel` / `AudioBus`). Against mwg 0.44's retro-audio
-contracts it adds: `retroBlockSource` / `retroLoopRegion` (a `BlockSource` for `StreamChannel` / `StreamPlayable`,
+`renderTrack` (a `LoadedTrack` with the loop region for `Channel` / `AudioBus`), and `retroStreamLoader` (BGM/BGS
+through `AudioBus` without rendering a whole buffer). It also provides `retroBlockSource` / `retroLoopRegion`
+(a `BlockSource` for `StreamChannel` / `StreamPlayable`,
 endless tunes streamed instead of rendered), `registerRetroMidiEngines(registerMidiSynth)` (`retro:mt32`,
 `retro:dx7` with SysEx bank dumps, `retro:d50`), `retroSfxBackend` (our `SfxEngine` as one of mwg's `SfxBackend`s,
 with `toMwgSfxDefinition` boarding our definitions through mwg's `SfxBank`), and `retroLoadFor` / `retroOutputFor`

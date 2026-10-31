@@ -3,6 +3,26 @@
 Les versions suivent [SemVer](https://semver.org/lang/fr/). Tant que le numéro majeur est 0, une version mineure
 peut changer une interface.
 
+## 0.4.0 — mwg 0.49, streaming et voix
+
+- **Intégration mwg 0.49.x** : le pair facultatif passe à `^0.49.0`, compatible avec la version publiée de mwg.
+  `retroStreamLoader` alimente les BGM/BGS d'`AudioBus` sans rendre un tampon complet, avec les points de boucle
+  du fichier et un lecteur indépendant par requête. Les deux chargeurs rétro transmettent l'annulation au
+  chargement des octets et rapportent leur progression ; un chargement remplacé est abandonné avant le rendu.
+- **Guide `docs/MWG-USAGE.md`** : choix entre streaming et tampons, ressources embarquées, imports ciblés,
+  cœurs MIDI sur Worker et réglages de sortie.
+- **Voix et chant** : synthèse à formants, phonémisation française et anglaise, chant syllabique, vocodeur,
+  `SpeechChip` et `SpeechService`. `BrowserSpeech` utilise les voix du navigateur ; les entrées séparées
+  `./node/speech`, `./node/french-phonemizer` et `./speech/kokoro` proposent les rendus Windows et les moteurs
+  optionnels. Aucun poids de modèle n'est embarqué ; voir `docs/SPEECH.md` et `NOTICE`.
+- **Composition et analyse** : `composeCue`, styles et scènes, `DrumMachine`, estimation du tempo, profils de
+  hauteur et comparaison spectrale des rendus.
+- Le journal des modifications est désormais inclus dans le paquet npm.
+
+Validation : vérification TypeScript, construction, formatage et mesures de bundles ; 380 tests réussis,
+un test SCI facultatif ignoré faute de ressources externes. D-50, MT-32, DX7 et M1 vérifiés sur de vrais Workers
+de mwg 0.49.0 : sortie identique au rendu direct, sans sous-alimentation.
+
 ## 0.3.0 — ajout de `playTone`
 
 - **`playTone`** (`@datamoc/mwg-retro-audio/sfx`) : joue une fréquence avec forme d’onde, durée, volume et

@@ -1,8 +1,9 @@
-import type { BusKind, BusLoader, LoadedTrack } from '@datamoc/mwg/audio';
+import type { BusKind, BusLoadContext, BusLoader, LoadedTrack, StreamLoader } from '@datamoc/mwg/audio';
 import { renderPlayer, toAudioBuffer, type BufferFactory } from '../driver/Renderer.ts';
 import type { OutputStageOptions } from '../driver/OutputStage.ts';
 import { loadFile, type LoadFileOptions } from '../formats/load.ts';
 import type { RetroPlayer } from '../players/Player.ts';
+import { retroBlockSource, retroLoopRegion } from './blockSource.ts';
 
 export interface RenderTrackOptions {
 	/** longest tune to render, seconds (default 300: endless NSF / SID tunes are cut there) */
@@ -33,45 +34,79 @@ export function renderTrack(
 	return { buffer, loop: options.loopWhole ? { start: 0, end: result.duration } : null };
 }
 
-export interface RetroBusLoaderOptions extends RenderTrackOptions {
-	context: BufferFactory & { sampleRate: number };
+export interface RetroStreamLoaderOptions {
+	context: { sampleRate: number };
 	/** path of a bus asset (default: `${kind}/${name}`); return null for an asset this loader does not provide */
 	locate?: (kind: BusKind, name: string) => string | null;
-	fetchBytes?: (path: string) => Promise<Uint8Array>;
+	fetchBytes?: (path: string, signal?: AbortSignal) => Promise<Uint8Array>;
 	load?: Omit<LoadFileOptions, 'sampleRate' | 'name' | 'loop'>;
+}
+
+export interface RetroBusLoaderOptions extends RetroStreamLoaderOptions, RenderTrackOptions {
+	context: BufferFactory & { sampleRate: number };
 	/** kinds whose tunes loop as a whole when the file has no loop point (default: bgm and bgs) */
 	loopKinds?: readonly BusKind[];
 }
 
-/**
- * A `BusLoader` for mwg's `AudioBus`: background music, ambience, jingles and sound effects stored as YM, VGM, NSF,
- * SID, MOD, XM, IT, CMF, DRO, IMF, WAV, VOC or MWA files are rendered through the engine and handed over as buffers.
- * Unknown paths give `null`, as the bus expects.
- */
-export function retroBusLoader(options: RetroBusLoaderOptions): BusLoader {
+function createPlayerLoader(
+	options: RetroStreamLoaderOptions,
+): (kind: BusKind, name: string, context?: BusLoadContext) => Promise<RetroPlayer | null> {
 	const fetchBytes =
 		options.fetchBytes ??
-		(async (path: string) => {
-			const response = await fetch(path);
+		(async (path: string, signal?: AbortSignal) => {
+			const response = await fetch(path, { signal });
 			if (!response.ok) throw new Error(`cannot load ${path}: ${response.status}`);
 			return new Uint8Array(await response.arrayBuffer());
 		});
-	const loopKinds = options.loopKinds ?? ['bgm', 'bgs'];
-	return async (kind, name) => {
+	return async (kind: BusKind, name: string, context?: BusLoadContext): Promise<RetroPlayer | null> => {
+		if (context?.signal.aborted) return null;
 		const path = options.locate ? options.locate(kind, name) : `${kind}/${name}`;
 		if (!path) return null;
-		let bytes: Uint8Array;
+		context?.progress(0);
 		try {
-			bytes = await fetchBytes(path);
+			const bytes = await fetchBytes(path, context?.signal);
+			if (context?.signal.aborted) return null;
+			context?.progress(0.5);
+			return loadFile(bytes, {
+				...options.load,
+				name: path,
+				sampleRate: options.context.sampleRate,
+				loop: false,
+			});
 		} catch {
 			return null;
 		}
-		let player: RetroPlayer;
-		try {
-			player = loadFile(bytes, { ...options.load, name: path, sampleRate: options.context.sampleRate });
-		} catch {
-			return null;
-		}
-		return renderTrack(player, options.context, { ...options, loopWhole: loopKinds.includes(kind) });
+	};
+}
+
+/**
+ * A buffered loader for `AudioBus`, with file loop points and optional load progress/cancellation.
+ * Unknown paths return null. Prefer `retroStreamLoader` for long BGM and BGS tracks.
+ */
+export function retroBusLoader(options: RetroBusLoaderOptions): BusLoader {
+	const loadPlayer = createPlayerLoader(options);
+	const loopKinds = options.loopKinds ?? ['bgm', 'bgs'];
+	return async (kind, name, context) => {
+		const player = await loadPlayer(kind, name, context);
+		if (!player || context?.signal.aborted) return null;
+		const track = renderTrack(player, options.context, { ...options, loopWhole: loopKinds.includes(kind) });
+		context?.progress(1);
+		return track;
+	};
+}
+
+/**
+ * Stream BGM and BGS through `AudioBus` without rendering the whole tune into memory.
+ * Each request owns a fresh player; mwg controls looping, seeking and the channel lifetime.
+ * Unknown files return null so the bus can try its buffered loader.
+ * Rendering and seeks still run on the calling thread; use hosted MIDI for expensive synths.
+ */
+export function retroStreamLoader(options: RetroStreamLoaderOptions): StreamLoader {
+	const loadPlayer = createPlayerLoader(options);
+	return async (kind, name, context) => {
+		const player = await loadPlayer(kind, name, context);
+		if (!player || context.signal.aborted) return null;
+		context.progress(1);
+		return { source: retroBlockSource(player), loop: retroLoopRegion(player) };
 	};
 }
