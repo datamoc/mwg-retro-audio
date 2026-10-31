@@ -77,7 +77,7 @@ chips and their clocks inside; decoding needs nothing but this package (`docs/MW
 
 ## With mwg (`@datamoc/mwg`)
 
-The optional integration targets **mwg 0.49.x**. See [MWG usage](docs/MWG-USAGE.md) for playback choices and examples.
+The optional integration targets **mwg 0.52.x**. See [MWG usage](docs/MWG-USAGE.md) for playback choices and examples.
 `@datamoc/mwg-retro-audio/mwg`: `retroPlayableFactory` (a `Playable` for `Music`'s crossfades), `retroBusLoader` and
 `renderTrack` (a `LoadedTrack` with the loop region for `Channel` / `AudioBus`), and `retroStreamLoader` (BGM/BGS
 through `AudioBus` without rendering a whole buffer). It also provides `retroBlockSource` / `retroLoopRegion`

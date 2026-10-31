@@ -15,3 +15,4 @@ export { TrackerPlayer, type TrackerStep } from './players/TrackerPlayer.ts';
 export * from './sfx/index.ts';
 export * from './speech/index.ts';
 export * from './compose/index.ts';
+export * from './jobs/index.ts';

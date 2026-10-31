@@ -3,6 +3,27 @@
 Les versions suivent [SemVer](https://semver.org/lang/fr/). Tant que le numéro majeur est 0, une version mineure
 peut changer une interface.
 
+## 0.6.0 — mwg 0.52, composition et rendu dans un worker
+
+- **Pair mwg `^0.52.0`** : 0.52 accepte le cœur d'un moteur en texte source et convertit des notes horodatées en
+  `MidiFile` sans fichier MIDI intermédiaire.
+- **Rendu MIDI asynchrone sur worker** : `registerRetroWorkerMidiEngines` enregistre
+  les moteurs `retro:*` avec leur cœur packagé, pour que `renderMidiToBufferAsync` les exécute hors du fil principal ;
+  sortie identique au rendu direct, vérifiée pour les 48 moteurs du catalogue.
+- **`renderNotesAsync`** : rend des notes horodatées (enregistrement, phrase générée) en échantillons via
+  `midiFileFromTimedMessages` et `renderMidiToBufferAsync`, annulable avec un `AbortSignal`.
+- **Composition et rendu dans un worker** : `composeCueAsync` (mêmes échantillons que `composeCue`, avec progression et
+  annulation), `renderFileAsync` (un fichier YM, VGM, NSF, MOD… rendu hors du fil principal), un worker par appel,
+  terminé à la fin ou sur annulation, et repli sur le fil appelant sans `Worker`. `composeCue` est découpé en un plan
+  des notes et un rendu, sans changer un seul échantillon (22 cas comparés avant/après).
+- **Mode notes** : `composeNotes` / `composeNotesAsync` renvoient la même musique en événements MIDI (basse, accords,
+  mélodie, batterie sur le canal 10), `scoreToMidiFile` en fait un fichier, et `foldLoop` replie la queue d'un rendu
+  pour boucler sans clic. Les gestionnaires des workers sont exposés par `./jobs/handlers`.
+
+Validation : vérification TypeScript, construction, formatage et mesures de bundles ; 400 tests réussis, un test SCI
+facultatif ignoré faute de ressources externes. D-50, MT-32, DX7 et M1 vérifiés sur de vrais Workers de mwg 0.52.0 ;
+workers de composition et de rendu vérifiés dans Chrome (échantillons identiques au calcul direct).
+
 ## 0.5.0 — optimisation du D-50 et du MT-32
 
 - **Synthèse LA** : suppression des allocations par échantillon, calcul des paramètres fixes une fois par bloc,

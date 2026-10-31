@@ -104,8 +104,53 @@ const resolveStyle = (style: string | StyleSpec, scene?: string): StyleSpec => {
 	return applyScene(found, mood);
 };
 
-/** Compose and render a looping cue from a style, a seed and a duration */
-export function composeCue(options: ComposeOptions): Cue {
+/** Reports how far a composition has come (0..1); throwing from it abandons the work, which is how a cancel works */
+export interface ComposeHooks {
+	onProgress?: (fraction: number) => void;
+}
+
+/** One melodic note of the plan, with the way `composeCue` renders it with its own voices */
+export interface PlannedNote {
+	part: 'bass' | 'chords' | 'lead';
+	bar: number;
+	/** sixteenth of the bar, 0 to 15 */
+	step: number;
+	midi: number;
+	/** length in seconds */
+	seconds: number;
+	timbre: Timbre;
+	shape: NoteShape;
+	gainLeft: number;
+	gainRight: number;
+}
+
+/** Everything that is decided before a sample is made: the one source of both `composeCue` and `composeNotes` */
+export interface CuePlan {
+	style: StyleSpec;
+	rate: number;
+	/** the random generator, positioned after the melodic choices: the sung voice line goes on drawing from it */
+	rng: Random;
+	beat: number;
+	barSeconds: number;
+	stepSeconds: number;
+	bars: number;
+	total: number;
+	/** chord root (scale degree) of each bar */
+	roots: number[];
+	scaleNote: (index: number, octave?: number) => number;
+	notes: PlannedNote[];
+	hits: DrumHit[];
+	drumGain: number;
+	voiceMode: 'sing' | 'speak' | 'none';
+	vocoder: boolean;
+	voiceOn: boolean;
+}
+
+/**
+ * Decide the music: chords, bass, drum hits and lead motif. The order of the random draws is part of the contract
+ * (the same seed must give the same cue), so it must not change.
+ */
+export function planCue(options: ComposeOptions): CuePlan {
 	const style = resolveStyle(options.style, options.scene);
 	const feel = { ...DEFAULT_FEEL, ...style.feel };
 	const rate = options.sampleRate ?? 44100;
@@ -114,10 +159,7 @@ export function composeCue(options: ComposeOptions): Cue {
 	const barSeconds = 4 * beat;
 	const bars = Math.max(1, Math.round(options.duration / barSeconds));
 	const total = Math.round(bars * barSeconds * rate);
-	const left = new Float32Array(total);
-	const right = new Float32Array(total);
 	const stepSeconds = beat / 4;
-	const stepSample = (bar: number, step: number): number => Math.round((bar * 16 + step) * stepSeconds * rate);
 
 	const scale = SCALES[style.mode];
 	const tonicMidi = 36 + style.tonic;
@@ -142,15 +184,8 @@ export function composeCue(options: ComposeOptions): Cue {
 	hits.push(...drums.pattern('hat', g.hat, style.tempo, 4, bars));
 	hits.push(...drums.pattern('openHat', g.openHat, style.tempo, 4, bars));
 	if (g.tom) hits.push(...drums.pattern('tom', g.tom, style.tempo, 4, bars));
-	const drumTrack = drums.render(hits, bars * barSeconds);
-	const gainDrums = 0.3 * feel.drumLevel;
-	for (let i = 0; i < total; i++) {
-		left[i] += drumTrack[i] * gainDrums;
-		right[i] += drumTrack[i] * gainDrums;
-	}
 
-	const note = (timbre: Timbre, midi: number, seconds: number, shape: NoteShape): Float32Array =>
-		renderNote(timbre, midiToHz(midi), seconds, rate, shape);
+	const notes: PlannedNote[] = [];
 
 	// bass
 	const bassShape: NoteShape = { attack: 0.004, release: 0.05, decay: style.instruments.bass === 'fm' ? 3 : 1.5 };
@@ -162,48 +197,60 @@ export function composeCue(options: ComposeOptions): Cue {
 			let next = step + 1;
 			while (next < 16 && pattern[next] === '.') next++;
 			const index = roots[bar] + (c === 'F' ? 4 : 0);
-			const midi = scaleNote(index, feel.bassOctave) + (c === 'O' ? 12 : 0);
-			const sound = note(style.instruments.bass, midi, Math.min(next - step, 4) * stepSeconds * 0.9, bassShape);
-			mixLooped(left, right, sound, stepSample(bar, step), 0.42, 0.42);
+			notes.push({
+				part: 'bass',
+				bar,
+				step,
+				midi: scaleNote(index, feel.bassOctave) + (c === 'O' ? 12 : 0),
+				seconds: Math.min(next - step, 4) * stepSeconds * 0.9,
+				timbre: style.instruments.bass,
+				shape: bassShape,
+				gainLeft: 0.42,
+				gainRight: 0.42,
+			});
 		}
 	}
 
 	// chords
 	const chordShape: NoteShape = { attack: 0.02, release: 0.1, decay: style.instruments.chords === 'stabs' ? 6 : 0.4 };
 	const chordTimbre: Timbre = style.chip === 'psg' ? 'square' : style.instruments.lead === 'fm' ? 'fm' : 'saw';
+	const chord = (
+		bar: number,
+		step: number,
+		midi: number,
+		seconds: number,
+		gain: number,
+		timbre: Timbre,
+		shape: NoteShape,
+	): void => {
+		notes.push({ part: 'chords', bar, step, midi, seconds, timbre, shape, gainLeft: gain, gainRight: gain });
+	};
 	for (let bar = 0; bar < bars; bar++) {
 		const tones = [0, 2, 4].map((k) => scaleNote(roots[bar] + k, 2));
 		if (style.instruments.chords === 'pad') {
-			for (const midi of tones)
-				mixLooped(
-					left,
-					right,
-					note(chordTimbre, midi, barSeconds, chordShape),
-					stepSample(bar, 0),
-					0.07 * feel.chordLevel,
-					0.07 * feel.chordLevel,
-				);
+			for (const midi of tones) chord(bar, 0, midi, barSeconds, 0.07 * feel.chordLevel, chordTimbre, chordShape);
 		} else if (style.instruments.chords === 'stabs') {
 			for (const step of [2, 6, 10, 14])
-				for (const midi of tones)
-					mixLooped(
-						left,
-						right,
-						note(chordTimbre, midi, stepSeconds * 1.5, chordShape),
-						stepSample(bar, step),
-						0.06 * feel.chordLevel,
-						0.08 * feel.chordLevel,
-					);
+				for (const midi of tones) {
+					notes.push({
+						part: 'chords',
+						bar,
+						step,
+						midi,
+						seconds: stepSeconds * 1.5,
+						timbre: chordTimbre,
+						shape: chordShape,
+						gainLeft: 0.06 * feel.chordLevel,
+						gainRight: 0.08 * feel.chordLevel,
+					});
+				}
 		} else {
 			for (let step = 0; step < 16; step++)
-				mixLooped(
-					left,
-					right,
-					note('square', tones[step % 3] + 12, stepSeconds * 0.8, { attack: 0.002, release: 0.02, decay: 8 }),
-					stepSample(bar, step),
-					0.09 * feel.chordLevel,
-					0.09 * feel.chordLevel,
-				);
+				chord(bar, step, tones[step % 3] + 12, stepSeconds * 0.8, 0.09 * feel.chordLevel, 'square', {
+					attack: 0.002,
+					release: 0.02,
+					decay: 8,
+				});
 		}
 	}
 
@@ -238,15 +285,69 @@ export function composeCue(options: ComposeOptions): Cue {
 			if (Math.floor(m.step / 16) !== bar % 2) continue;
 			const varied = bar % 4 === 3 && m.step % 16 >= 8;
 			const index = roots[bar] + m.offset + (varied ? 2 : 0);
-			const sound = note(
-				style.instruments.lead,
-				scaleNote(index, 2 + feel.leadOctave),
-				m.length * stepSeconds * 0.9,
-				leadShape,
-			);
-			mixLooped(left, right, sound, stepSample(bar, m.step % 16), 0.2, 0.15);
+			notes.push({
+				part: 'lead',
+				bar,
+				step: m.step % 16,
+				midi: scaleNote(index, 2 + feel.leadOctave),
+				seconds: m.length * stepSeconds * 0.9,
+				timbre: style.instruments.lead,
+				shape: leadShape,
+				gainLeft: 0.2,
+				gainRight: 0.15,
+			});
 		}
 	}
+
+	return {
+		style,
+		rate,
+		rng,
+		beat,
+		barSeconds,
+		stepSeconds,
+		bars,
+		total,
+		roots,
+		scaleNote,
+		notes,
+		hits,
+		drumGain: 0.3 * feel.drumLevel,
+		voiceMode,
+		vocoder,
+		voiceOn,
+	};
+}
+
+/**
+ * Compose and render a looping cue from a style, a seed and a duration. `hooks.onProgress` is told how far the
+ * work has come, so a worker can report it.
+ */
+export function composeCue(options: ComposeOptions, hooks: ComposeHooks = {}): Cue {
+	const progress = (fraction: number): void => hooks.onProgress?.(fraction);
+	progress(0);
+	const plan = planCue(options);
+	const { style, rate, rng, beat, barSeconds, stepSeconds, bars, total, roots, scaleNote } = plan;
+	const { voiceMode, vocoder, voiceOn } = plan;
+	const left = new Float32Array(total);
+	const right = new Float32Array(total);
+	const stepSample = (bar: number, step: number): number => Math.round((bar * 16 + step) * stepSeconds * rate);
+	progress(0.05);
+
+	const drumTrack = new DrumMachine({ sampleRate: rate }).render(plan.hits, bars * barSeconds);
+	for (let i = 0; i < total; i++) {
+		left[i] += drumTrack[i] * plan.drumGain;
+		right[i] += drumTrack[i] * plan.drumGain;
+	}
+	progress(0.15);
+
+	// the planned notes are mixed in the order of the plan: bass, chords, lead
+	for (const [index, planned] of plan.notes.entries()) {
+		const sound = renderNote(planned.timbre, midiToHz(planned.midi), planned.seconds, rate, planned.shape);
+		mixLooped(left, right, sound, stepSample(planned.bar, planned.step), planned.gainLeft, planned.gainRight);
+		if (index % 64 === 0) progress(0.15 + 0.45 * (index / plan.notes.length));
+	}
+	progress(0.6);
 
 	// voice line, on its own track so that the music can be lowered under it
 	const voiceLeft = new Float32Array(total);
@@ -313,6 +414,8 @@ export function composeCue(options: ComposeOptions): Cue {
 		}
 	}
 
+	progress(0.8);
+
 	// the music is lowered under the voice, then the voice is added
 	let musicPeak = 0;
 	for (let i = 0; i < total; i++) musicPeak = Math.max(musicPeak, Math.abs(left[i]), Math.abs(right[i]));
@@ -332,6 +435,8 @@ export function composeCue(options: ComposeOptions): Cue {
 			}
 		}
 
+	progress(0.88);
+
 	// tone of the style, on the whole mix with the voice: a matching EQ towards its average spectrum, or the plain shelves of `eq`
 	if (style.toneTarget) {
 		// two passes: the first one moves the shape most of the way, the second one corrects what it left
@@ -343,6 +448,8 @@ export function composeCue(options: ComposeOptions): Cue {
 		for (const channel of [left, right]) shelve(channel, rate, style.eq.low, style.eq.high);
 	}
 
+	progress(0.97);
+
 	// normalise the peak
 	let peak = 0;
 	for (let i = 0; i < total; i++) peak = Math.max(peak, Math.abs(left[i]), Math.abs(right[i]));
@@ -351,6 +458,7 @@ export function composeCue(options: ComposeOptions): Cue {
 		left[i] *= gain;
 		right[i] *= gain;
 	}
+	progress(1);
 	return {
 		left,
 		right,

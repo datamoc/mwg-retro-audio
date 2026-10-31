@@ -28,10 +28,11 @@
       ]
     },
     "chipRoot": {
-      "bytes": 3170,
-      "gzipBytes": 1343,
+      "bytes": 3330,
+      "gzipBytes": 1436,
       "modules": [
         "dist/chips/Ym2149.js",
+        "dist/chips/index.js",
         "chipRoot.ts"
       ]
     },

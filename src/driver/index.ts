@@ -52,3 +52,4 @@ export {
 	type ExportOptions,
 } from './export.ts';
 export { vorbisComment } from './vorbisComment.ts';
+export { renderFileAsync, type RenderFileOptions } from './renderFile.ts';
