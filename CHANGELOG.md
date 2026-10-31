@@ -3,6 +3,11 @@
 Les versions suivent [SemVer](https://semver.org/lang/fr/). Tant que le numéro majeur est 0, une version mineure
 peut changer une interface.
 
+## 0.4.1 — métadonnées du dépôt
+
+- `package.json` déclare `repository`, `homepage` et `bugs`, requis par npm pour vérifier la provenance de la
+  publication. Aucun changement de code. La 0.4.0 n'a jamais été publiée sur npm.
+
 ## 0.4.0 — mwg 0.49, streaming et voix
 
 - **Intégration mwg 0.49.x** : le pair facultatif passe à `^0.49.0`, compatible avec la version publiée de mwg.
