@@ -4,12 +4,19 @@ on:
   release:
     types: [published]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing version tag to stage (leave empty when running from the tag)
+        required: false
+        type: string
 
 jobs:
   publish:
-    # a release or a manual run counts only on a version tag: a run started from a branch never publishes
-    if: startsWith(github.ref, 'refs/tags/v')
+    # A branch run must explicitly select an existing version tag; checkout never stages branch contents.
+    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && startsWith(inputs.tag, 'v'))
     runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
     permissions:
       contents: read
       # trusted publishing: npm exchanges this workflow's OIDC identity for a short-lived publish token once the
@@ -18,22 +25,31 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: refs/tags/${{ inputs.tag || github.ref_name }}
       # v7, not v6: v6 exports a dummy NODE_AUTH_TOKEN that npm tries before the OIDC exchange (E401)
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: '26'
           package-manager-cache: false
           registry-url: 'https://registry.npmjs.org'
-      - run: npm pkg set devDependencies.@datamoc/mwg='>=0.47.0'
+      - name: Verify version and select compatible published MWG
+        run: |
+          node -e "if (process.env.RELEASE_TAG !== 'v' + require('./package.json').version) throw new Error('tag does not match package version')"
+          MWG_RANGE=$(node -p "require('./package.json').peerDependencies['@datamoc/mwg']")
+          npm pkg set "devDependencies.@datamoc/mwg=$MWG_RANGE"
       - run: npm install --no-package-lock
-      # trusted publishing needs npm 11.5.1 or later
-      - run: npm install -g npm@^11.5.1
+      # Staged publishing needs npm 11.15.0 or later.
+      - run: npm install -g npm@^11.15.0
       # a tag alone proves nothing about the code at that tag
       - run: npm run check
       - run: npm test
       - run: npm run check:bundles
       # staged, not direct (as for mwg): the version stays pending until `npm stage approve`, which needs 2FA by hand
       # (`npm stage list` shows what is pending); an OIDC token can stage but never make a version public
-      - run: |
-          if [[ "${{ github.ref_name }}" == *-* ]]; then TAG="--tag alpha"; else TAG=""; fi
+      - name: Stage on npm for maintainer approval
+        env:
+          NPM_CONFIG_LOGLEVEL: verbose
+        run: |
+          if [[ "$RELEASE_TAG" == *-* ]]; then TAG="--tag alpha"; else TAG=""; fi
           npm stage publish --access public $TAG
