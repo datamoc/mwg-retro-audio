@@ -44,6 +44,7 @@ export class BreakPointEnvelope {
 	private releaseT = -1;
 	private releaseFrom = 0;
 	private value = 0;
+	private segment = 1;
 
 	constructor(
 		private readonly points: BreakPoints,
@@ -75,15 +76,18 @@ export class BreakPointEnvelope {
 		const p = this.points;
 		const hold = p[Math.min(this.sustainIndex, p.length - 1)];
 		const t = Math.min(this.t, hold[0]);
-		let v = p[0][1];
-		for (let i = 1; i < p.length; i++) {
-			if (t <= p[i][0]) {
-				const [t0, v0] = p[i - 1];
-				const [t1, v1] = p[i];
-				v = t1 === t0 ? v1 : v0 + ((v1 - v0) * (t - t0)) / (t1 - t0);
-				break;
-			}
-			v = p[i][1];
+		let i = this.segment;
+		// A smaller sustain time or a backwards step can move us to an earlier segment.
+		if (i >= p.length || (i > 1 && t <= p[i - 1][0])) i = 1;
+		while (i < p.length && !(t <= p[i][0])) i++;
+		this.segment = i;
+		let v = p[p.length - 1][1];
+		if (i < p.length) {
+			const t0 = p[i - 1][0];
+			const v0 = p[i - 1][1];
+			const t1 = p[i][0];
+			const v1 = p[i][1];
+			v = t1 === t0 ? v1 : v0 + ((v1 - v0) * (t - t0)) / (t1 - t0);
 		}
 		this.value = v;
 		return v;
@@ -94,12 +98,24 @@ export class BreakPointEnvelope {
 export class LowPass {
 	private ic1 = 0;
 	private ic2 = 0;
+	private cutoff = NaN;
+	private damping = NaN;
+	private rate = NaN;
+	private a1 = 0;
+	private a2 = 0;
+	private a3 = 0;
 	/** `damping` 2 = no resonance, small values = strong resonance */
 	process(x: number, cutoffHz: number, damping: number, rate: number): number {
-		const g = Math.tan((Math.PI * Math.min(cutoffHz, rate * 0.45)) / rate);
-		const a1 = 1 / (1 + g * (g + damping));
-		const a2 = g * a1;
-		const a3 = g * a2;
+		if (cutoffHz !== this.cutoff || damping !== this.damping || rate !== this.rate) {
+			this.cutoff = cutoffHz;
+			this.damping = damping;
+			this.rate = rate;
+			const g = Math.tan((Math.PI * Math.min(cutoffHz, rate * 0.45)) / rate);
+			this.a1 = 1 / (1 + g * (g + damping));
+			this.a2 = g * this.a1;
+			this.a3 = g * this.a2;
+		}
+		const { a1, a2, a3 } = this;
 		const v3 = x - this.ic2;
 		const v1 = a1 * this.ic1 + a2 * v3;
 		const v2 = this.ic2 + a2 * this.ic1 + a3 * v3;
@@ -1386,6 +1402,24 @@ export function renderAttackRecipe(recipe: D50Attack, rate: number, rootHz: numb
 	return out;
 }
 
+const recipeCache = new WeakMap<D50Attack, { signature: string; waves: Map<number, Float32Array> }>();
+
+/** Share generated samples between voices; changing a recipe leaves already playing voices intact. */
+function cachedAttackRecipe(recipe: D50Attack, rate: number): Float32Array {
+	const signature = JSON.stringify([recipe.harmonics, recipe.noise, recipe.noiseDecay, recipe.duration]);
+	let entry = recipeCache.get(recipe);
+	if (!entry || entry.signature !== signature) {
+		entry = { signature, waves: new Map() };
+		recipeCache.set(recipe, entry);
+	}
+	let wave = entry.waves.get(rate);
+	if (!wave) {
+		wave = renderAttackRecipe(recipe, rate, noteHz(60), 22222);
+		entry.waves.set(rate, wave);
+	}
+	return wave;
+}
+
 /** generate (and cache) the synthesized attack `index` at `rate` Hz, rooted at note 60; deterministic, no ROM data */
 export function synthAttackWave(index: number, rate: number): Float32Array {
 	const recipe = D50_ATTACKS[((index % D50_ATTACKS.length) + D50_ATTACKS.length) % D50_ATTACKS.length];
@@ -1699,6 +1733,12 @@ export const D50_PRESETS: readonly { name: string; patch: D50Patch }[] = [
 ];
 
 interface D50PartialState {
+	frequency: number;
+	detune: number;
+	keyOctaves: number;
+	staticCutoff: number;
+	rootFrequency: number;
+	pcmRateRatio: number;
 	noiseState?: number;
 	table?: Float32Array;
 	tableHarmonics?: number;
@@ -1747,7 +1787,7 @@ export class SimpleReverb {
 			const y = c.buf[c.idx];
 			c.store = y * 0.28 + c.store * 0.72; // damping
 			c.buf[c.idx] = x + c.store * feedback;
-			c.idx = (c.idx + 1) % c.buf.length;
+			if (++c.idx === c.buf.length) c.idx = 0;
 			s += y;
 		}
 		s *= 0.25;
@@ -1755,7 +1795,7 @@ export class SimpleReverb {
 			const y = a.buf[a.idx];
 			const v = s + 0.5 * y;
 			a.buf[a.idx] = v;
-			a.idx = (a.idx + 1) % a.buf.length;
+			if (++a.idx === a.buf.length) a.idx = 0;
 			s = y - 0.5 * v;
 		}
 		return s;
@@ -1782,6 +1822,7 @@ export class D50Synth extends PolyBase {
 	private chorusPhase = 0;
 	private reverbL = new SimpleReverb(this.sampleRate);
 	private reverbR = new SimpleReverb(this.sampleRate, 23);
+	private hasEffectInput = false;
 
 	loadPatch(patch: D50Patch): void {
 		this.patch = patch;
@@ -1811,6 +1852,7 @@ export class D50Synth extends PolyBase {
 		this.chorusPhase = 0;
 		this.reverbL = new SimpleReverb(this.sampleRate);
 		this.reverbR = new SimpleReverb(this.sampleRate, 23);
+		this.hasEffectInput = false;
 	}
 
 	noteOn(note: number, velocity = 100): void {
@@ -1834,6 +1876,12 @@ export class D50Synth extends PolyBase {
 			[1, 1],
 		];
 		return {
+			frequency: 0,
+			detune: 1,
+			keyOctaves: 0,
+			staticCutoff: 0,
+			rootFrequency: 1,
+			pcmRateRatio: 1,
 			phase: 0,
 			lfoPhase: 0,
 			pcmPos: 0,
@@ -1853,7 +1901,7 @@ export class D50Synth extends PolyBase {
 							}
 						: {
 								data: p.recipe
-									? renderAttackRecipe(p.recipe, this.sampleRate, noteHz(60), 22222)
+									? cachedAttackRecipe(p.recipe, this.sampleRate)
 									: synthAttackWave(p.attack ?? 0, this.sampleRate),
 								rate: this.sampleRate,
 								rootNote: 60,
@@ -1879,52 +1927,63 @@ export class D50Synth extends PolyBase {
 	protected sample(): number {
 		const dt = 1 / this.sampleRate;
 		let sum = 0;
-		for (const v of this.voices) {
+		let retained = 0;
+		for (let vi = 0; vi < this.voices.length; vi++) {
+			const v = this.voices[vi];
+			let done = true;
 			v.t += dt;
-			v.tones.forEach((tone, ti) => {
+			for (let ti = 0; ti < v.tones.length; ti++) {
+				const tone = v.tones[ti];
 				const def = this.patch.tones[ti];
 				const lfo = def.lfo;
-				let mod = { pitch: 1, cutoff: 1, amp: 1 };
+				let pitch = 1;
+				let cutoff = 1;
+				let amp = 1;
 				if (lfo) {
 					v.lfoPhase[ti] = (v.lfoPhase[ti] + lfo.rate * dt) % 1;
 					const fade = lfo.delay ? Math.min(1, v.t / lfo.delay) : 1;
 					const w = Math.sin(2 * Math.PI * v.lfoPhase[ti]) * fade;
-					mod = {
-						pitch: 2 ** (((lfo.pitchCents ?? 0) * w) / 1200),
-						cutoff: 2 ** ((lfo.filterOctaves ?? 0) * w),
-						amp: 1 - (lfo.ampDepth ?? 0) * (0.5 - 0.5 * w),
-					};
+					if (lfo.pitchCents) pitch = 2 ** ((lfo.pitchCents * w) / 1200);
+					if (lfo.filterOctaves) cutoff = 2 ** (lfo.filterOctaves * w);
+					amp = 1 - (lfo.ampDepth ?? 0) * (0.5 - 0.5 * w);
 				}
-				const outs = tone.map((s, pi) => this.partialSample(v, s, def.partials[pi], dt, mod));
-				if (outs.length < 2) {
-					sum += (outs[0] ?? 0) * v.velocity;
-					return;
+				const out0 = tone.length > 0 ? this.partialSample(tone[0], def.partials[0], dt, pitch, cutoff, amp) : 0;
+				if (tone.length > 0 && !tone[0].ampEnv.done) done = false;
+				if (tone.length < 2) {
+					sum += out0 * v.velocity;
+					continue;
 				}
+				const out1 = this.partialSample(tone[1], def.partials[1], dt, pitch, cutoff, amp);
+				if (!tone[1].ampEnv.done) done = false;
 				const st = D50_STRUCTURES[Math.min(6, Math.max(0, (def.structure ?? 1) - 1))];
 				const m0 = def.partials[0].mute ? 0 : 1;
 				const m1 = def.partials[1].mute ? 0 : 1;
-				const second = st.ring ? 2 * outs[0] * outs[1] * (m0 | m1) : outs[1] * m1;
-				sum += (st.gains[0] * m0 * outs[0] + second * st.gains[1]) * v.velocity;
-			});
+				const second = st.ring ? 2 * out0 * out1 * (m0 | m1) : out1 * m1;
+				sum += (st.gains[0] * m0 * out0 + second * st.gains[1]) * v.velocity;
+			}
+			if (!done) this.voices[retained++] = v;
 		}
-		this.voices = this.voices.filter((v) => !v.tones.every((t) => t.every((s) => s.ampEnv.done)));
+		this.voices.length = retained;
 		return sum * 0.35;
 	}
 
 	private partialSample(
-		v: D50Voice,
 		s: D50PartialState,
 		p: D50Partial,
 		dt: number,
-		mod: { pitch: number; cutoff: number; amp: number },
+		pitch: number,
+		cutoffMod: number,
+		amp: number,
 	): number {
-		const lfoPitch = p.lfoSign === undefined || p.lfoSign === 1 ? mod.pitch : p.lfoSign === 0 ? 1 : 1 / mod.pitch;
-		const pitchMul = (s.pitchEnv ? s.pitchEnv.next(dt) : 1) * 2 ** ((p.detuneCents ?? 0) / 1200) * lfoPitch;
-		const f = noteHz(60 + (v.note - 60) * (p.keyFollow ?? 1)) * pitchMul;
+		let lfoPitch = pitch;
+		if (p.lfoSign === 0) lfoPitch = 1;
+		else if (p.lfoSign !== undefined && p.lfoSign !== 1) lfoPitch = 1 / pitch;
+		const pitchMul = (s.pitchEnv ? s.pitchEnv.next(dt) : 1) * s.detune * lfoPitch;
+		const f = s.frequency * pitchMul;
 		let x: number;
 		if (p.wave === 'attack' && s.src) {
 			const src = s.src;
-			s.pcmPos += (f / noteHz(src.rootNote)) * (src.rate / this.sampleRate);
+			s.pcmPos += (f / s.rootFrequency) * s.pcmRateRatio;
 			const end = src.loopEnd ?? src.data.length;
 			if (s.pcmPos >= end && src.loopStart !== undefined)
 				s.pcmPos = src.loopStart + ((s.pcmPos - end) % Math.max(1, end - src.loopStart));
@@ -1938,7 +1997,7 @@ export class D50Synth extends PolyBase {
 			x = (s.noiseState >>> 8) / 2 ** 23 - 1;
 		} else if (p.wave === 'loop' && p.loop) {
 			s.phase = (s.phase + f * dt) % 1;
-			const harmonics = Math.floor((0.45 * this.sampleRate) / f);
+			const harmonics = Math.max(1, Math.min(p.loop.length, Math.floor((0.45 * this.sampleRate) / f) | 0));
 			if (!s.table || s.tableHarmonics !== harmonics) {
 				s.table = harmonicTable(p.loop, harmonics);
 				s.tableHarmonics = harmonics;
@@ -1950,47 +2009,75 @@ export class D50Synth extends PolyBase {
 			s.phase = (s.phase + f * dt) % 1;
 			s.lfoPhase = (s.lfoPhase + (p.pwmRate ?? 0) * dt) % 1;
 			if (p.wave === 'square') {
-				const pw = Math.min(
-					0.95,
-					Math.max(0.05, (p.pulseWidth ?? 0.5) + (p.pwmDepth ?? 0) * Math.sin(2 * Math.PI * s.lfoPhase)),
-				);
+				const pwm = p.pwmDepth ? p.pwmDepth * Math.sin(2 * Math.PI * s.lfoPhase) : 0;
+				const pw = Math.min(0.95, Math.max(0.05, (p.pulseWidth ?? 0.5) + pwm));
 				x = s.phase < pw ? 1 : -1;
 			} else x = 2 * s.phase - 1;
 		}
 		const filtLevel = s.filtEnv.next(dt);
 		let filtered = x;
 		if (!p.bypassFilter) {
-			const keyOctaves = ((v.note - 60) * (p.filterKeyFollow ?? 0)) / 12;
-			const cutoff = p.cutoff * 2 ** ((p.filterDepth ?? 0) * (filtLevel - 1) + keyOctaves) * mod.cutoff;
+			const cutoff =
+				((p.filterDepth ?? 0) === 0
+					? s.staticCutoff
+					: p.cutoff * 2 ** ((p.filterDepth ?? 0) * (filtLevel - 1) + s.keyOctaves)) * cutoffMod;
 			filtered = s.filter.process(x, cutoff, 2 - 1.9 * (p.resonance ?? 0.1), this.sampleRate);
 		}
-		return filtered * s.ampEnv.next(dt) * (p.level ?? 1) * mod.amp;
+		return filtered * s.ampEnv.next(dt) * (p.level ?? 1) * amp;
+	}
+
+	private readChorus(delayMs: number): number {
+		const d = Math.max(1, (delayMs * this.sampleRate) / 1000);
+		const pos = this.chorusIdx - d;
+		const i0 = Math.floor(pos);
+		const frac = pos - i0;
+		const a = this.chorusBuf[i0 & 8191];
+		const b = this.chorusBuf[(i0 + 1) & 8191];
+		return a + (b - a) * frac;
 	}
 
 	override render(left: Float32Array, right: Float32Array, start: number, count: number): void {
 		if (this.muted) return;
 		const chorus = this.patch.chorus;
 		const reverb = this.patch.reverb;
+		if (this.voices.length === 0 && !this.hasEffectInput) {
+			// Silent delay lines need no processing, but the chorus clock must keep running.
+			if (chorus && chorus.mix > 0) {
+				for (let i = 0; i < count; i++) {
+					this.chorusPhase = (this.chorusPhase + (chorus.rate ?? 0.6) / this.sampleRate) % 1;
+					this.chorusIdx = (this.chorusIdx + 1) & 8191;
+				}
+			}
+			return;
+		}
+		// Refresh once per block so edits to a loaded patch still affect held notes.
+		for (const v of this.voices) {
+			for (let ti = 0; ti < v.tones.length; ti++) {
+				const tone = v.tones[ti];
+				for (let pi = 0; pi < tone.length; pi++) {
+					const s = tone[pi];
+					const p = this.patch.tones[ti].partials[pi];
+					s.frequency = noteHz(60 + (v.note - 60) * (p.keyFollow ?? 1));
+					s.detune = 2 ** ((p.detuneCents ?? 0) / 1200);
+					s.keyOctaves = ((v.note - 60) * (p.filterKeyFollow ?? 0)) / 12;
+					s.staticCutoff = p.cutoff * 2 ** s.keyOctaves;
+					s.rootFrequency = s.src ? noteHz(s.src.rootNote) : 1;
+					s.pcmRateRatio = s.src ? s.src.rate / this.sampleRate : 1;
+				}
+			}
+		}
 		for (let i = 0; i < count; i++) {
 			const dry = this.sample() * this.level;
+			if (dry !== 0) this.hasEffectInput = true;
 			let l = dry;
 			let r = dry;
 			if (chorus && chorus.mix > 0) {
 				this.chorusPhase = (this.chorusPhase + (chorus.rate ?? 0.6) / this.sampleRate) % 1;
 				this.chorusBuf[this.chorusIdx] = dry;
 				const delayMs = 14 + (chorus.depth ?? 0.4) * 6 * Math.sin(2 * Math.PI * this.chorusPhase);
-				const read = (phase: number): number => {
-					const d = Math.max(1, ((delayMs + phase) * this.sampleRate) / 1000);
-					const pos = this.chorusIdx - d;
-					const i0 = Math.floor(pos);
-					const frac = pos - i0;
-					const a = this.chorusBuf[((i0 % 8192) + 8192) % 8192];
-					const b = this.chorusBuf[(((i0 + 1) % 8192) + 8192) % 8192];
-					return a + (b - a) * frac;
-				};
-				l = dry + read(0) * chorus.mix;
-				r = dry + read(2.5) * chorus.mix;
-				this.chorusIdx = (this.chorusIdx + 1) % 8192;
+				l = dry + this.readChorus(delayMs) * chorus.mix;
+				r = dry + this.readChorus(delayMs + 2.5) * chorus.mix;
+				this.chorusIdx = (this.chorusIdx + 1) & 8191;
 			}
 			if (reverb && reverb.mix > 0) {
 				const fb = Math.min(0.85, reverb.feedback ?? 0.5);

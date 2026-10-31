@@ -36,8 +36,8 @@
       ]
     },
     "catalogue": {
-      "bytes": 162039,
-      "gzipBytes": 51757,
+      "bytes": 163528,
+      "gzipBytes": 52372,
       "modules": [
         "dist/chips/Ym2149.js",
         "dist/instruments/controls.js",
@@ -98,8 +98,8 @@
       ]
     },
     "mwgCatalogue": {
-      "bytes": 182304,
-      "gzipBytes": 59386,
+      "bytes": 183800,
+      "gzipBytes": 60010,
       "modules": [
         "dist/chips/Ym2149.js",
         "dist/instruments/controls.js",
@@ -171,8 +171,8 @@
       ]
     },
     "business": {
-      "bytes": 132620,
-      "gzipBytes": 41857,
+      "bytes": 134114,
+      "gzipBytes": 42433,
       "modules": [
         "dist/chips/index.js",
         "dist/chips/BoxRenderer.js",

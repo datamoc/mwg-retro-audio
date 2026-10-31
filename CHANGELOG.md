@@ -3,6 +3,23 @@
 Les versions suivent [SemVer](https://semver.org/lang/fr/). Tant que le numéro majeur est 0, une version mineure
 peut changer une interface.
 
+## 0.5.0 — optimisation du D-50 et du MT-32
+
+- **Synthèse LA** : suppression des allocations par échantillon, calcul des paramètres fixes une fois par bloc,
+  suivi du segment courant des enveloppes et mise en cache des coefficients des filtres inchangés.
+- **Chorus et réverbération** : lecture du chorus sans fonction temporaire ni modulos ; bouclage des lignes de
+  réverbération par comparaison. Les parties encore silencieuses évitent le traitement des effets tout en
+  conservant l'horloge du chorus. Les queues d'effets restent rendues.
+- **Attaques des patches SysEx** : partage des échantillons générés entre les voix, avec invalidation lorsqu'une
+  recette change ; les notes déjà en cours conservent leurs échantillons.
+- **Modulation** : calculs évités lorsque la profondeur est nulle et sélection des tables harmoniques stabilisée.
+- **Mesures** : `node --import tsx tools/benchmark-la.ts --quick` compare les presets D-50 et le MT-32 à 16 notes,
+  rapporte le temps écoulé et le temps CPU, et produit les empreintes des sorties PCM.
+
+Les sorties PCM avant et après optimisation sont identiques sur les scénarios comparés : huit presets, parties
+MT-32, modulation et ondes bouclées. La compatibilité avec le pair facultatif `@datamoc/mwg` reste `^0.49.0`.
+Validation : 385 tests réussis, un test facultatif ignoré ; vérification TypeScript, compilation et formatage validés.
+
 ## 0.4.1 — métadonnées du dépôt
 
 - `package.json` déclare `repository`, `homepage` et `bugs`, requis par npm pour vérifier la provenance de la
