@@ -8,7 +8,7 @@ import { writeSmf } from '../../src/formats/midiWrite.ts';
 import { parseSf2 } from '../../src/formats/soundfont.ts';
 import { soundFontBankId, soundFontInstruments } from '../../src/instruments/soundfont.ts';
 import type { InstrumentDef } from '../../src/instruments/Instrument.ts';
-import { renderPlayerAsync } from '../../src/driver/Renderer.ts';
+import { renderPlayerAsync, skipFrames } from '../../src/driver/Renderer.ts';
 import { AUDIO_FORMATS, exportAudioBlob } from '../../src/driver/export.ts';
 import type { AudioFormat } from '../../src/driver/export.ts';
 import { isOpusEncodingAvailable } from '../../src/driver/opus.ts';
@@ -49,6 +49,9 @@ let gain: GainNode | undefined;
 let stream: RetroStream | undefined;
 let current: { song: MidiSong; title: string; key: string; voice: Instrument } | undefined;
 let startedAt = 0;
+/** seconds into the current song when the stream was started (0 on a fresh play) */
+let songStartOffset = 0;
+let paused = false;
 const lifetime = new AbortController();
 const options = { signal: lifetime.signal };
 const shortcuts = [
@@ -228,22 +231,26 @@ function livePlayer(): RetroPlayer {
 function songPlayer(song: MidiSong, voice: Instrument): RetroPlayer {
 	return new MidiPlayer(song, { sampleRate: context!.sampleRate }, new InstrumentMidiSink(voice));
 }
-/** (re)start the audio stream: the current song when there is one, the keyboard alone otherwise */
-function attach(): void {
+/** (re)start the audio stream: the current song when there is one and it is not paused, the keyboard alone otherwise */
+function attach(at = 0): void {
 	stream?.stop();
 	stream = undefined;
 	if (!context || !gain) return;
+	const song = current && !paused ? current : undefined;
 	if (current) current.voice = voiceFor(current.key);
-	const created = new RetroStream(context, gain, current ? songPlayer(current.song, current.voice) : livePlayer(), {
+	const player = song ? songPlayer(song.song, song.voice) : livePlayer();
+	if (song && at > 0) skipFrames(player, Math.floor(at * context.sampleRate));
+	const created = new RetroStream(context, gain, player, {
 		chunkSeconds: 0.01,
 		lookaheadSeconds: 0.04,
 	});
 	stream = created;
-	if (current) {
+	if (song) {
 		created.onended = () => {
 			if (stream === created) nextSong();
 		};
 		startedAt = context.currentTime + 0.05;
+		songStartOffset = at;
 	}
 	created.start();
 }
@@ -356,6 +363,7 @@ const panelComplex = element<HTMLElement>('panel-complex');
 function setMode(mode: 'simple' | 'complex'): void {
 	panelSimple.hidden = mode !== 'simple';
 	panelComplex.hidden = mode !== 'complex';
+	element('transport').hidden = mode !== 'simple';
 	element('tabSimple').setAttribute('aria-selected', String(mode === 'simple'));
 	element('tabComplex').setAttribute('aria-selected', String(mode === 'complex'));
 	try {
@@ -415,6 +423,11 @@ drawRandomModels();
 const songSelect = element<HTMLSelectElement>('song');
 const playButton = element<HTMLButtonElement>('play');
 const stopButton = element<HTMLButtonElement>('stop');
+const transportBack = element<HTMLButtonElement>('transportBack');
+const transportToggle = element<HTMLButtonElement>('transportToggle');
+const transportToggleIcon = element<HTMLSpanElement>('transportToggleIcon');
+const transportForward = element<HTMLButtonElement>('transportForward');
+const transportStop = element<HTMLButtonElement>('transportStop');
 const clock = element('clock');
 const progress = element<HTMLProgressElement>('progress');
 const chain = element<HTMLInputElement>('chain');
@@ -454,16 +467,38 @@ function voiceFor(_key: string): Instrument {
 		return definitionOf('simple:Piano')!.create({ sampleRate: context?.sampleRate ?? 44100 });
 	return instrument;
 }
+/** live position in the current song, in seconds */
+function songElapsed(): number {
+	if (!current) return 0;
+	const elapsed = paused
+		? songStartOffset
+		: songStartOffset + Math.max(0, (context?.currentTime ?? 0) - startedAt);
+	return Math.max(0, Math.min(current.song.duration, elapsed));
+}
+/** the four transport buttons under the keyboard, mirroring the complex tab's playback */
+function paintTransport(): void {
+	const elapsed = songElapsed();
+	const duration = current?.song.duration ?? 0;
+	transportBack.disabled = !current || elapsed <= 0.01;
+	transportForward.disabled = !current || elapsed >= Math.max(0, duration - 0.01);
+	transportStop.disabled = !current;
+	const playing = Boolean(current) && !paused;
+	const label = t(playing ? 'transportPause' : 'transportPlay');
+	transportToggleIcon.textContent = playing ? '⏸' : '▶';
+	transportToggle.setAttribute('aria-label', label);
+	transportToggle.title = label;
+}
 function paintSong(): void {
 	paintExport();
 	playButton.textContent = current ? t('playAgain') : t('play');
 	stopButton.disabled = !current;
+	paintTransport();
 	if (!current) {
 		clock.textContent = '';
 		progress.value = 0;
 		return;
 	}
-	const elapsed = Math.max(0, Math.min(current.song.duration, (context?.currentTime ?? 0) - startedAt));
+	const elapsed = songElapsed();
 	progress.max = current.song.duration || 1;
 	progress.value = elapsed;
 	clock.textContent = t('clock', {
@@ -484,6 +519,8 @@ async function playSong(key: string): Promise<void> {
 		return;
 	}
 	panic();
+	paused = false;
+	songStartOffset = 0;
 	current = { song, title: entry.title(), key, voice: instrument };
 	songSelect.value = key;
 	attach();
@@ -491,10 +528,44 @@ async function playSong(key: string): Promise<void> {
 	say('playing', { title: current.title });
 }
 function stopSong(): void {
+	paused = false;
+	songStartOffset = 0;
 	current = undefined;
 	attach();
 	paintSong();
 	say('stopped');
+}
+/** seek by `delta` seconds in the current song; a paused song stays paused */
+async function seekSong(delta: number): Promise<void> {
+	if (!current || !(await ensureAudio())) return;
+	const duration = current.song.duration;
+	const target = Math.max(0, Math.min(Math.max(0, duration - 0.01), songElapsed() + delta));
+	panic();
+	songStartOffset = target;
+	if (paused) attach();
+	else attach(target);
+	paintSong();
+}
+/** play/pause the selected song, or pause/resume the current one */
+async function toggleTransport(): Promise<void> {
+	if (!current) {
+		await playSong(songSelect.value);
+		return;
+	}
+	if (!(await ensureAudio())) return;
+	if (paused) {
+		panic();
+		paused = false;
+		attach(songStartOffset);
+		say('playing', { title: current.title });
+	} else {
+		songStartOffset = songElapsed();
+		panic();
+		paused = true;
+		attach();
+		say('paused');
+	}
+	paintSong();
 }
 /** the next song of the list, the take left out; the list starts over after its last entry */
 function nextSong(): void {
@@ -507,6 +578,10 @@ function nextSong(): void {
 playButton.addEventListener('click', () => void playSong(songSelect.value), options);
 songSelect.addEventListener('change', () => void playSong(songSelect.value), options);
 stopButton.addEventListener('click', stopSong, options);
+transportBack.addEventListener('click', () => void seekSong(-10), options);
+transportToggle.addEventListener('click', () => void toggleTransport(), options);
+transportForward.addEventListener('click', () => void seekSong(10), options);
+transportStop.addEventListener('click', stopSong, options);
 
 let userCount = 0;
 /** a file or a folder entry; the title is the one in the header of the file, the name of the file without it */
@@ -597,7 +672,7 @@ folderButton.addEventListener(
 	options,
 );
 const ticker = setInterval(() => {
-	if (current) paintSong();
+	if (current && !paused) paintSong();
 }, 250);
 
 element<HTMLInputElement>('volume').addEventListener(

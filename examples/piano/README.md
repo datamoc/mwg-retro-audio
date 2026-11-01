@@ -10,6 +10,11 @@ démarre au premier appui. Le bouton **Complexe** rouvre toute l'interface
 (machines, préréglages, banques SoundFont, lecture automatique, enregistrement,
 export, réglages) ; le choix du mode est retenu d'une visite à l'autre.
 
+En mode Simple, la barre sous le clavier (⏪ ⏯ ⏩ ⏹) pilote la lecture du
+morceau sélectionné dans Complexe : reculer ou avancer de 10 secondes,
+pause/reprise, arrêt. La barre est masquée en mode Complexe, qui garde ses
+propres boutons de lecture.
+
 Jouer avec la souris ou les touches A W S E D F T G Y H U J K. Z et X changent
 l’octave ; le champ Octave permet aussi de la choisir. Le choix de modèle
 reconstruit le panneau de paramètres, avec unités, plages, valeurs par défaut,

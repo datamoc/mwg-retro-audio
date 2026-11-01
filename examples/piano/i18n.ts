@@ -33,6 +33,13 @@ const dictionary = {
 		play: '▶ Lire',
 		playAgain: '↻ Depuis le début',
 		stop: '■ Arrêter',
+		transportAria: 'Lecture du morceau',
+		transportBack: 'Reculer de 10 secondes',
+		transportPlay: 'Lire ou reprendre',
+		transportPause: 'Mettre en pause',
+		transportForward: 'Avancer de 10 secondes',
+		transportStop: 'Arrêter la musique',
+		paused: 'Lecture en pause.',
 		chain: 'Enchaîner les morceaux',
 		file: 'Votre fichier .mid',
 		progress: 'Progression du morceau',
@@ -169,6 +176,13 @@ const dictionary = {
 		play: '▶ Play',
 		playAgain: '↻ From the start',
 		stop: '■ Stop',
+		transportAria: 'Song playback',
+		transportBack: 'Back 10 seconds',
+		transportPlay: 'Play or resume',
+		transportPause: 'Pause',
+		transportForward: 'Forward 10 seconds',
+		transportStop: 'Stop the music',
+		paused: 'Playback paused.',
 		chain: 'Play songs one after another',
 		file: 'Your .mid file',
 		progress: 'Song progress',
@@ -305,6 +319,13 @@ const dictionary = {
 		play: '▶ Abspielen',
 		playAgain: '↻ Von vorn',
 		stop: '■ Stopp',
+		transportAria: 'Stückwiedergabe',
+		transportBack: '10 Sekunden zurück',
+		transportPlay: 'Abspielen oder fortsetzen',
+		transportPause: 'Pause',
+		transportForward: '10 Sekunden vor',
+		transportStop: 'Musik stoppen',
+		paused: 'Wiedergabe pausiert.',
 		chain: 'Stücke nacheinander spielen',
 		file: 'Ihre .mid-Datei',
 		progress: 'Fortschritt des Stücks',
@@ -460,11 +481,13 @@ export function words(text: string): string {
 	);
 }
 
-/** fill every `data-i18n` (text), `data-i18n-aria` (aria-label) and `data-i18n-title` element, and the page title */
+/** fill every `data-i18n` (text), `data-i18n-aria` (aria-label), `data-i18n-title` (title) element, and the page title */
 export function translatePage(): void {
 	for (const node of document.querySelectorAll<HTMLElement>('[data-i18n]'))
 		node.textContent = t(node.dataset.i18n as Key);
 	for (const node of document.querySelectorAll<HTMLElement>('[data-i18n-aria]'))
 		node.setAttribute('aria-label', t(node.dataset.i18nAria as Key));
+	for (const node of document.querySelectorAll<HTMLElement>('[data-i18n-title]'))
+		node.setAttribute('title', t(node.dataset.i18nTitle as Key));
 	document.title = t('title');
 }
