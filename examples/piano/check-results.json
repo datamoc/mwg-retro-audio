@@ -1,6 +1,6 @@
 {
-	"browser": "chrome headless 155.0.8059.85 (playwright-core 1.64.1)",
-	"date": "2026-10-18",
+	"browser": "chrome headless 156.0.8078.80 (playwright-core 1.64.1)",
+	"date": "2026-11-01",
 	"models": 48,
 	"peaks": [
 		{
@@ -30,7 +30,7 @@
 		{
 			"id": "sid-8580",
 			"name": "MOS 8580 SID — Commodore 64 (révision tardive), Commodore 128",
-			"peak": 0.2012,
+			"peak": 0.1952,
 			"controls": 9
 		},
 		{
@@ -114,7 +114,7 @@
 		{
 			"id": "namco163",
 			"name": "Namco 163 — Famicom (cartouche Namco)",
-			"peak": 0.1002,
+			"peak": 0.1,
 			"controls": 8
 		},
 		{
@@ -186,7 +186,7 @@
 		{
 			"id": "vl1",
 			"name": "Casio VL-1",
-			"peak": 0.1148,
+			"peak": 0.1071,
 			"controls": 6
 		},
 		{
@@ -210,25 +210,25 @@
 		{
 			"id": "dartmouth",
 			"name": "Dartmouth Digital Synthesizer",
-			"peak": 0.1803,
+			"peak": 0.1789,
 			"controls": 5
 		},
 		{
 			"id": "synclavier",
 			"name": "Synclavier",
-			"peak": 0.0918,
+			"peak": 0.0894,
 			"controls": 6
 		},
 		{
 			"id": "la-synth",
 			"name": "Structure LA",
-			"peak": 0.056,
+			"peak": 0.0544,
 			"controls": 5
 		},
 		{
 			"id": "ai-synth",
 			"name": "Structure AI",
-			"peak": 0.0542,
+			"peak": 0.0544,
 			"controls": 5
 		},
 		{
@@ -240,13 +240,13 @@
 		{
 			"id": "simple:Piano",
 			"name": "Piano",
-			"peak": 0.0199,
+			"peak": 0.021,
 			"controls": 1
 		},
 		{
 			"id": "simple:Electric piano",
 			"name": "Electric piano",
-			"peak": 0.0105,
+			"peak": 0.0106,
 			"controls": 1
 		},
 		{
@@ -264,7 +264,7 @@
 		{
 			"id": "simple:Bass",
 			"name": "Bass",
-			"peak": 0.0115,
+			"peak": 0.0117,
 			"controls": 1
 		},
 		{
