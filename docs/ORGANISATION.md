@@ -91,7 +91,7 @@ Depuis le dossier de développement `airball/` :
 ## 7. Vérification
 
 ```sh
-npm install     # installe notamment @datamoc/mwg 0.53.0
+npm install     # installe notamment @datamoc/mwg 0.53.1
 npm run check   # tsc --noEmit
 npm test        # node --import tsx --test "tests/**/*.test.ts"
 npm run build   # dist/

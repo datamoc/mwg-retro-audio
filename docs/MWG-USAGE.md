@@ -1,13 +1,13 @@
 # Using retro audio with MWG
 
-This integration targets `@datamoc/mwg` **0.53.0 and later in the 0.53 series** (`^0.53.0`), the published version checked on 1 November 2026.
+This integration targets `@datamoc/mwg` **0.53.1 and later in the 0.53 series** (`^0.53.0`), the published version checked on 1 November 2026.
 Install both packages in a consuming application:
 
 ```sh
-npm install @datamoc/mwg@^0.53.0 @datamoc/mwg-retro-audio
+npm install @datamoc/mwg@^0.53.1 @datamoc/mwg-retro-audio
 ```
 
-Development tests against the published `@datamoc/mwg` 0.53.0 package. MWG remains an optional
+Development tests against the published `@datamoc/mwg` 0.53.1 package. MWG remains an optional
 peer: the retro adapters import only its types, so standalone chip playback does not need the framework.
 
 ## Choose the playback path
@@ -270,4 +270,4 @@ node ../mwg/tools/check-retro-cores.mjs --package . --engines retro:d50,retro:mt
 
 Use native Node with TypeScript stripping (or built JavaScript) for this probe. Running MWG's source through `tsx`
 can inject helpers into functions that the host serializes, causing the worker to fail and fall back to inline
-execution. The four engines above were checked with MWG 0.53.0: worker mode, no underruns, matching direct output.
+execution. The four engines above were checked with MWG 0.53.1: worker mode, no underruns, matching direct output.

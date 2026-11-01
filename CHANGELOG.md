@@ -3,6 +3,12 @@
 Les versions suivent [SemVer](https://semver.org/lang/fr/). Tant que le numéro majeur est 0, une version mineure
 peut changer une interface.
 
+## Non publié
+
+- **Pair de développement mwg `0.53.1`** : 0.53.1 n'ajoute que `Picture.setTone`, sans changement de
+  l'API audio utilisée ici ; les tests tournent désormais contre cette version. La plage publique du pair
+  reste `^0.53.0`, donc 0.7.0 accepte déjà 0.53.1 chez les consommateurs.
+
 ## 0.7.0 - Audio dynamique et mwg 0.53
 
 - **Pair mwg `^0.53.0`** : 0.53 fournit `Channel.insert` / `removeInsert` / `setFilter` et

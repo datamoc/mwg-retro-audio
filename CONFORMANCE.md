@@ -227,7 +227,7 @@ sont pas des mesures d'émulateur.
 | Preset sur un bruitage ordinaire rendu hors ligne | Complet | T | `renderSfx(définition, secondes, { effects: 'gameboy' })` |
 | Preset sur un SE ordinaire joué par `AudioBus` | Complet | T | `retroEffectsLoader(base, preset)` traite chaque buffer décodé ; un flux BGM/BGS n'a pas de buffer entier et reste hors de ce chemin |
 | Rendu dans un vrai contexte Web Audio | Complet | Chrome headless (OfflineAudioContext) | les 10 presets rendent un signal non nul, sans étage omis ; les mesures de croisements de zéro et d'énergie haute fréquence diffèrent entre presets. Écoute humaine non réalisée |
-| `retroEffectsFor(channel, preset)` dans `./mwg` | Complet avec mwg 0.53.0 | T | utilise `Channel.insert` / `removeInsert` (0.53) pour insérer les nœuds de la chaîne dans l'ordre ; un hôte qui expose `insertEffect(chain)` / `removeEffect(chain)` est utilisé directement, et une destination inscriptible reste le repli pour les versions antérieures |
+| `retroEffectsFor(channel, preset)` dans `./mwg` | Complet avec mwg 0.53.1 | T | utilise `Channel.insert` / `removeInsert` (0.53) pour insérer les nœuds de la chaîne dans l'ordre ; un hôte qui expose `insertEffect(chain)` / `removeEffect(chain)` est utilisé directement, et une destination inscriptible reste le repli pour les versions antérieures |
 | Filtre par type sur `AudioBus` (BGM/BGS/ME/SE) | Partiel | — | mwg 0.53 fournit `AudioBus.setFilter(kind, spec)` pour un biquad ; la chaîne rétro multi-étages reste attachée à un `Channel` |
 | Réverbération, chorus, distorsion génériques | Volontairement absent | — | ce sont des primitives de `@datamoc/mwg`, pas l'identité de la bibliothèque rétro |
 

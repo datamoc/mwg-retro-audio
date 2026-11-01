@@ -245,7 +245,7 @@ Demande de `4MWG/dynamic-audio-three-projects.md` §2 (2026-11-01).
 Livré : `src/effects/` (`presets.ts`, `chain.ts`, `pcm.ts`), `src/players/RetroVoice.ts`,
 `src/mwg/effects.ts` (`retroEffectsFor` et `retroEffectsLoader`), `tests/effects.test.ts`,
 `tests/retro-voice.test.ts`, `tests/mwg-effects.test.ts`, et `tools/render-effects.ts` pour l'écoute. `@datamoc/mwg` 0.53.0
-fournit `Channel.insert` / `removeInsert` (§1 de la même note) : `retroEffectsFor` insère les
+fournit `Channel.insert` / `removeInsert` (§1 de la même note), testé ici avec 0.53.1 : `retroEffectsFor` insère les
 nœuds de la chaîne dans la voix et les retire à la destruction ; `insertEffect`/`removeEffect`
 et le reroutage de destination restent les replis pour les versions antérieures. Limites
 détaillées dans `CONFORMANCE.md`.
