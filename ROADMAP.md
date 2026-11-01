@@ -228,3 +228,24 @@ Validé par `tools/piano-check.mjs` avec le MIDI simulé.
 Les points 5 et 6 restent réalisables dans ce projet, sans modification d'un autre ;
 SoundFonts et microKORG ajoutent leurs modules propres et ne doivent rien imposer aux
 imports ciblés (à vérifier par `npm run check:bundles` comme pour les autres modèles).
+
+### 7. Voix et effets rétro dynamiques
+
+Demande de `4MWG/dynamic-audio-three-projects.md` §2 (2026-11-01).
+
+- [x] Voix jouable `retroVoice({ chip, context, destination })` : `setFrequency`,
+  `setVolume`, `stop`, et séquenceur de notes `[{ note, at, duration }]` avec noms de
+  notes, boucle et ordonnancement sur l'horloge Audio.
+- [x] Presets rétro nommés (`nes`, `sid`, `gameboy`, `mega-drive`, `adlib`, `pc-speaker`,
+  `atari-st`, `bitcrush`, `lofi`, `none`) : bitcrush, passe-bas de puce, réduction de
+  fréquence et non-linéarité de CAC ; chaîne Web Audio en direct et passe hors ligne.
+- [x] `retroEffectsFor(channel, preset)` dans `./mwg`, et `renderSfx(..., { effects })`
+  pour un bruitage ordinaire rendu hors ligne.
+
+Livré : `src/effects/` (`presets.ts`, `chain.ts`, `pcm.ts`), `src/players/RetroVoice.ts`,
+`src/mwg/effects.ts` (`retroEffectsFor` et `retroEffectsLoader`), `tests/effects.test.ts`,
+`tests/retro-voice.test.ts`, `tests/mwg-effects.test.ts`, et `tools/render-effects.ts` pour l'écoute. `@datamoc/mwg` 0.53.0
+fournit `Channel.insert` / `removeInsert` (§1 de la même note) : `retroEffectsFor` insère les
+nœuds de la chaîne dans la voix et les retire à la destruction ; `insertEffect`/`removeEffect`
+et le reroutage de destination restent les replis pour les versions antérieures. Limites
+détaillées dans `CONFORMANCE.md`.

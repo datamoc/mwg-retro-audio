@@ -1,5 +1,7 @@
 import type { Chip, ChipOptions } from '../chips/Chip.ts';
 import { createChip } from '../chips/index.ts';
+import { processRetroEffects } from '../effects/pcm.ts';
+import type { RetroEffectName, RetroEffectPreset } from '../effects/presets.ts';
 import { Region } from '../region.ts';
 import { AyDriver, driverFor, type ChipDriver, type VoiceValues } from './drivers.ts';
 import type { SfxBank, SfxChip, SfxCurve, SfxDefinition, SfxVoiceProgram } from './types.ts';
@@ -497,10 +499,18 @@ export class SfxEngine {
 }
 
 /** Render one effect on a fresh chip of its family: the offline path (`renderSfx`, specification 6.C.6) */
+export interface RenderSfxOptions {
+	sampleRate?: number;
+	region?: Region;
+	clock?: number;
+	/** retro effect preset applied to the rendered effect, for an ordinary SE buffer */
+	effects?: RetroEffectName | RetroEffectPreset;
+}
+
 export function renderSfx(
 	def: SfxDefinition,
 	seconds: number,
-	options: { sampleRate?: number; region?: Region; clock?: number } = {},
+	options: RenderSfxOptions = {},
 ): { left: Float32Array; right: Float32Array; sampleRate: number } {
 	const sampleRate = options.sampleRate ?? 44100;
 	const region = options.region ?? Region.NTSC;
@@ -525,5 +535,6 @@ export function renderSfx(
 	const right = new Float32Array(n);
 	guard.render(left, right, 0, n);
 	engine.renderDedicated(left, right, 0, n);
+	if (options.effects) processRetroEffects(left, right, sampleRate, options.effects);
 	return { left, right, sampleRate };
 }

@@ -28,6 +28,7 @@ Côté paquet, les adaptateurs qui consomment ces contrats vivent dans `src/mwg/
 | 1.4 budgets de décodage | `decoderLimits`, `assertInputSize`, `createBudgetedLoader` | utilisables tels quels autour de `loadFile` / `retroBusLoader` ; budget d'instructions des émulateurs 6502 (NSF/PSID) et SPC : option `budget` de `LoadOptions` (voir 11.0) |
 | 1.6 effets en données | `SfxBank`, `SfxBackend`, arbitre | `retroSfxBackend({ engine })`, `toMwgSfxDefinition`, `SfxEngine.isActive(id)` |
 | 1.8 étage de sortie et réglages | `AudioSettings` (`region`, `outputStage`, `soften`, `dynamics`) | `retroLoadFor`, `retroOutputFor`, `retroSfxEngineOptionsFor` |
+| 1.12 effets dynamiques | `Channel.insert` / `removeInsert` / `setFilter`, `AudioBus.setFilter` (0.53.0) | `retroEffectsFor` insère la chaîne dans le `Channel`, `createRetroEffectChain` expose ses nœuds |
 | 7. doubles de test | `FakeRetroPlayer`, `FakeAudioContext`, `FakeBlockSource` | `tests/mwg.test.ts` joue l'interopérabilité réelle contre ces doubles |
 
 Les constats sur mwg venaient de la lecture de `mwg/src/audio` à l'écriture (API d'alors : `Playable`,
@@ -230,6 +231,29 @@ Critères d'acceptation : le même lien donne la même musique note pour note (g
 tronqué reste jouable et indique qu'il l'est ; un lien qui désigne un moteur absent retombe sur le repli de 1.1 avec
 un événement de diagnostic.
 
+### 1.12 Chaîne d'inserts et filtres par type (fait en 0.53.0)
+
+Demande de la note `dynamic-audio-three-projects.md` §1 : un jeu doit pouvoir filtrer un SE, mettre une
+réverbération sur le BGS, ou retuner et filtrer le BGM sans recâbler le bus.
+
+Implémenté dans mwg 0.53.0 :
+
+- `Channel.insert(node)` / `removeInsert(node)` / `clearInserts()`, entre le gain/panoramique et la
+  destination, sans interrompre `update()` ni la lecture ;
+- `Channel.setFilter(spec | null)` appliqué en place sur la voix en cours (mêmes types que
+  `BiquadFilterNode` : `lowpass`, `highpass`, `bandpass`, `lowshelf`, `highshelf`, `peaking`, `notch`,
+  `allpass`), et `AudioBus.setFilter(kind, spec)` pour un type entier ;
+- une petite fabrique d'effets génériques (`createFilter`, `applyFilter`, `createReverb`, `createChorus`,
+  `createDistortion`) testable avec un faux contexte.
+
+Côté `mwg-retro-audio`, `createRetroEffectChain` expose ses nœuds dans l'ordre du signal,
+`retroEffectsFor(channel, preset)` les insère dans un `Channel` 0.53 avec `insert` / `removeInsert`, et
+`retroEffectsLoader(base, preset)` applique le même traitement aux buffers d'un `BusLoader` (SE ordinaires).
+Un `insertEffect(chain)` explicite et le reroutage de destination restent les replis pour les versions
+antérieures. `AudioBus.setFilter` couvre un biquad par type ; la chaîne rétro multi-étages reste attachée à
+un `Channel`. Les effets génériques (réverbération, chorus, distorsion) restent du ressort de mwg ; ce paquet
+garde les grains rétro.
+
 ## 2. Contenu et paquets (MWL)
 
 La proposition détaillée est dans [`MWL-PROPOSAL.md`](MWL-PROPOSAL.md) : `package`, `asset`, `character`, `animation`,
@@ -348,7 +372,7 @@ Dans l'esprit de `mwg-smoke`, `mwg-size`, `mwg-i18n`, `mwg-bench` :
 - `API_REPORT.md` / `api-surface.json` : les nouveaux contrats (`MidiSynth`, `AudioCoreHost`, type de son d'effet) doivent y figurer.
 - `examples/` : un exemple `retro-audio` (musique, effet, moteur MIDI interchangeable) avec contrôle de fumée navigateur.
 - `ROADMAP.md` : un item par ligne de la section 9, numéroté à la suite de `CLOSED.md` ; `CHANGELOG.md` à chaque livraison.
-- Version minimale du pair : le paquet déclare `@datamoc/mwg >=0.45.0` (le nom actuel depuis la version 0.45.0).
+- Version minimale du pair : le paquet déclare `@datamoc/mwg ^0.53.0` (le nom actuel depuis la version 0.45.0).
 
 ## 9. Ordre proposé
 

@@ -69,6 +69,39 @@ const player = loadFile(bytes, { sampleRate, chipFactory: engine.wrapFactory() }
 engine.play('laser');
 ```
 
+## Dynamic voices and retro effects
+
+`retroVoice` is the live counterpart of rendering a file: one monophonic voice over `PSGVoice`, with a
+note-list sequencer that schedules on the audio clock. `chip` selects the waveform (`ay`, `nes`, `sid`,
+`gameboy`, …), and a note is a MIDI number or a name such as `C#4`.
+
+```ts
+import { retroVoice } from '@datamoc/mwg-retro-audio';
+
+const voice = retroVoice({ chip: 'nes', context: ctx, destination: driver.getDestination() });
+voice.playNotes(
+	[
+		{ note: 'C5', at: 0, duration: 0.12 },
+		{ note: 'E5', at: 0.12, duration: 0.12 },
+		{ note: 'G5', at: 0.24, duration: 0.24 },
+	],
+	{ loop: true },
+);
+// later: voice.stop() or voice.dispose()
+```
+
+Retro effects are named data presets: `retroEffects('nes')`, `'sid'`, `'gameboy'`, `'mega-drive'`, `'adlib'`,
+`'pc-speaker'`, `'atari-st'`, `'bitcrush'`, `'lofi'` and `'none'`. `createRetroEffectChain(context, preset)`
+builds a live high-pass → sample-and-hold → bitcrush/DAC → low-pass → gain chain; `processRetroEffects` applies
+the same preset to PCM offline, and `renderSfx(definition, seconds, { effects: 'gameboy' })` shapes an ordinary
+sound effect render. The `./mwg` entry adds `retroEffectsFor(channel, preset)`, which attaches the chain to an
+mwg `Channel` (mwg 0.53 inserts the chain's nodes natively; an older host with only a writable destination is
+rerouted through it), and `retroEffectsLoader(base, preset)`, which processes ordinary buffered SE through a
+`BusLoader`.
+
+These presets are stylistic game effects, not emulator measurements: `CONFORMANCE.md` states what each one
+changes and what it leaves alone. `npx tsx tools/render-effects.ts` writes one WAV per preset for auditioning.
+
 ## The universal format: MWA
 
 Every register driven format converts to **MWA**, a compact DEFLATE-compressed log of timed register writes with the
@@ -77,7 +110,7 @@ chips and their clocks inside; decoding needs nothing but this package (`docs/MW
 
 ## With mwg (`@datamoc/mwg`)
 
-The optional integration targets **@datamoc/mwg 0.52.1 and later in the 0.52 series** (`@datamoc/mw_games` is its compatibility package). See [MWG usage](docs/MWG-USAGE.md) for playback choices and examples.
+The optional integration targets **@datamoc/mwg 0.53.0 and later in the 0.53 series** (`@datamoc/mw_games` is its compatibility package). See [MWG usage](docs/MWG-USAGE.md) for playback choices and examples.
 `@datamoc/mwg-retro-audio/mwg`: `retroPlayableFactory` (a `Playable` for `Music`'s crossfades), `retroBusLoader` and
 `renderTrack` (a `LoadedTrack` with the loop region for `Channel` / `AudioBus`), and `retroStreamLoader` (BGM/BGS
 through `AudioBus` without rendering a whole buffer). It also provides `retroBlockSource` / `retroLoopRegion`
@@ -89,7 +122,7 @@ with `toMwgSfxDefinition` boarding our definitions through mwg's `SfxBank`), and
 tracks what each side owns; `docs/MWL-PROPOSAL.md` proposes the MWL evolution that lets a character, its animations,
 scripts, effects and music travel as one file.
 
-The DX7 MIDI engine can exceed the -1 to 1 output range, especially with its default voice when no SysEx bank is loaded. Use MWG 0.52.1 render options `targetPeak` and optionally `targetRms` to normalize the result, or reduce `gain` and check the resulting peak before playback or export to avoid clipping. Engine loudness differs; match levels for the material being played.
+The DX7 MIDI engine can exceed the -1 to 1 output range, especially with its default voice when no SysEx bank is loaded. Use MWG 0.53.0 render options `targetPeak` and optionally `targetRms` to normalize the result, or reduce `gain` and check the resulting peak before playback or export to avoid clipping. Engine loudness differs; match levels for the material being played.
 
 ## Exporting a render
 

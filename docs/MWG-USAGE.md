@@ -1,13 +1,13 @@
 # Using retro audio with MWG
 
-This integration targets `@datamoc/mwg` **0.52.1 and later in the 0.52 series** (`^0.52.1`), the published version checked on 31 October 2026.
+This integration targets `@datamoc/mwg` **0.53.0 and later in the 0.53 series** (`^0.53.0`), the published version checked on 1 November 2026.
 Install both packages in a consuming application:
 
 ```sh
-npm install @datamoc/mwg@^0.52.1 @datamoc/mwg-retro-audio
+npm install @datamoc/mwg@^0.53.0 @datamoc/mwg-retro-audio
 ```
 
-Development tests against the published `@datamoc/mwg` 0.52.1 package. MWG remains an optional
+Development tests against the published `@datamoc/mwg` 0.53.0 package. MWG remains an optional
 peer: the retro adapters import only its types, so standalone chip playback does not need the framework.
 
 ## Choose the playback path
@@ -197,6 +197,61 @@ per part (`programs` overrides them). The voice line (speech or singing) is not 
 worker; options must be plain data (`chipFactory` is refused). `renderPlayerAsync` stays for a player you built yourself:
 it yields to the browser every 30 ms but runs on the calling thread.
 
+## Add a retro voice or a retro effect
+
+`retroVoice` is standalone (no mwg import) and plays note lists on the Web Audio clock:
+
+```ts
+import { retroVoice } from '@datamoc/mwg-retro-audio';
+
+const voice = retroVoice({ chip: 'nes', context, destination: context.destination });
+voice.playNotes([
+	{ note: 'C5', at: 0, duration: 0.12 },
+	{ note: 'E5', at: 0.12, duration: 0.12 },
+]);
+```
+
+For an ordinary sample or stream on an mwg `Channel`, `retroEffectsFor` attaches one of the named presets
+(`'nes'`, `'sid'`, `'gameboy'`, `'mega-drive'`, `'adlib'`, `'pc-speaker'`, `'atari-st'`, `'bitcrush'`, `'lofi'`):
+
+```ts
+import { Channel } from '@datamoc/mwg/audio';
+import { retroEffectsFor } from '@datamoc/mwg-retro-audio/mwg';
+
+const channel = new Channel(context);
+const effects = retroEffectsFor(channel, 'sid'); // after the channel gain/panner, before its destination
+channel.play(buffer);
+effects.setPreset('nes');
+// later: effects.dispose() restores the channel destination
+```
+
+mwg 0.53's `Channel` has native `insert` / `removeInsert`, so the adapter inserts the chain's nodes in
+signal order and removes them again on `dispose`, without restarting a playing voice. A channel that exposes
+`insertEffect(chain)` / `removeEffect(chain)` is used instead, and an older host with only a writable
+destination gets the destination rerouted through the chain. `AudioBus` now has `setFilter(kind, spec)` for
+one biquad over a whole kind; the multi-stage retro presets still belong to a `Channel`. The chain is also
+available directly as `effects.chain` for a graph you wire yourself. Disposing while a voice plays stops that
+voice (its nodes are gone); restart the channel to hear it dry.
+
+Data sound effects can carry the same preset into a plain buffer: `renderSfx(definition, seconds, { effects: 'gameboy' })`
+applies it offline; play the resulting buffer through a `Channel`, or serve it from your `AudioBus` loader by
+name. `retroSfxBackend` still voices definitions on the music chip itself and does not post-process them.
+
+For an ordinary sampled SE (a `.wav`, `.ogg` or any buffered track), wrap the bus loader instead of building a
+channel by hand:
+
+```ts
+import { AudioBus } from '@datamoc/mwg/audio';
+import { retroEffectsLoader } from '@datamoc/mwg-retro-audio/mwg';
+
+const bus = new AudioBus(context, { load: retroEffectsLoader(load, 'sid') });
+await bus.playSe({ name: 'door.wav' });
+```
+
+`retroEffectsLoader` processes each decoded buffer once, with the same code as `processRetroEffects`. It covers
+buffered tracks (`AudioBus.load`); a streaming BGM/BGS loader has no whole buffer, so keep it unwrapped or use a
+`Channel` chain for streamed music.
+
 ## Apply settings once at the right layer
 
 Use `retroLoadFor(settings)` for the fallback PSID region, and `retroSfxEngineOptionsFor` for PAL/NTSC effect ticks.
@@ -215,4 +270,4 @@ node ../mwg/tools/check-retro-cores.mjs --package . --engines retro:d50,retro:mt
 
 Use native Node with TypeScript stripping (or built JavaScript) for this probe. Running MWG's source through `tsx`
 can inject helpers into functions that the host serializes, causing the worker to fail and fall back to inline
-execution. The four engines above were checked with MWG 0.52.0: worker mode, no underruns, matching direct output.
+execution. The four engines above were checked with MWG 0.53.0: worker mode, no underruns, matching direct output.

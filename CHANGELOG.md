@@ -3,6 +3,25 @@
 Les versions suivent [SemVer](https://semver.org/lang/fr/). Tant que le numéro majeur est 0, une version mineure
 peut changer une interface.
 
+## 0.7.0 - Audio dynamique et mwg 0.53
+
+- **Pair mwg `^0.53.0`** : 0.53 fournit `Channel.insert` / `removeInsert` / `setFilter` et
+  `AudioBus.setFilter` ; `retroEffectsFor` insère désormais la chaîne dans la voix sans la redémarrer.
+- **Voix rétro jouables** : `retroVoice({ chip, context, destination })` construit sur `PSGVoice`, avec
+  `setFrequency` / `setVolume` / `stop` et un séquenceur `playNotes([{ note, at, duration }])` (noms de notes,
+  boucle, horloge Audio) ; `retroSequencer` en est la forme abrégée.
+- **Effets rétro nommés** : `retroEffects('nes' | 'sid' | 'gameboy' | 'mega-drive' | 'adlib' | 'pc-speaker' |
+  'atari-st' | 'bitcrush' | 'lofi' | 'none')` décrit bitcrush, passe-bas de puce, réduction de fréquence et
+  non-linéarité de CAC en données validées ; `createRetroEffectChain` les applique en direct et
+  `processRetroEffects` hors ligne. `renderSfx(..., { effects })` applique un preset à un bruitage ordinaire.
+  `OutputStage` gagne `lowpassQ` pour la résonance de ces presets.
+- **Intégration mwg** : `retroEffectsFor(channel, preset)` dans `./mwg` attache la chaîne à un `Channel` par
+  `insert` / `removeInsert` (mwg 0.53) ; `retroEffectsLoader(base, preset)` applique un preset aux buffers
+  d'un `BusLoader` (SE ordinaires). Un hôte `insertEffect`/`removeEffect` ou une destination inscriptible
+  restent les replis pour les versions antérieures.
+- **Documentation et écoute** : `CONFORMANCE.md` précise ce que chaque preset change ou non, `README.md` et
+  `docs/MWG-USAGE.md` donnent les exemples, et `tools/render-effects.ts` rend un WAV par preset.
+
 ## 0.6.1 - Intégration mwg 0.52.1 et niveaux MIDI
 
 - **Pair mwg `^0.52.1`** : testé avec la version publiée, qui fournit `targetPeak` et `targetRms` pour ajuster les niveaux des rendus MIDI.

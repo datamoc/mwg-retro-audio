@@ -1,6 +1,6 @@
 {
 	"name": "@datamoc/mwg-retro-audio",
-	"version": "0.6.1",
+	"version": "0.7.0",
 	"description": "Historical synthesizers and sound chips for mwg games, and a universal player for pre-MP3 electronic music: pure TypeScript (YM2149/AY, SID, NES APU, SN76489, YM2612, YM2151, OPL2/OPL3, DX7 and other historical synths) on the native Web Audio API, with players for YM, VGM/VGZ, NSF/NSFE, PSID, SPC, MIDI/XMI, MOD/XM/S3M/IT, DRO, IMF, CMF, HSC, RAD, ROL, D00, SCI, WAV and VOC files",
 	"type": "module",
 	"license": "MPL-2.0",
@@ -50,6 +50,10 @@
 		"./sfx": {
 			"types": "./dist/sfx/index.d.ts",
 			"default": "./dist/sfx/index.js"
+		},
+		"./effects": {
+			"types": "./dist/effects/index.d.ts",
+			"default": "./dist/effects/index.js"
 		},
 		"./jobs/handlers": {
 			"types": "./dist/jobs/handlers.d.ts",
@@ -118,7 +122,7 @@
 		"format:check": "prettier --check src tests"
 	},
 	"peerDependencies": {
-		"@datamoc/mwg": "^0.52.1",
+		"@datamoc/mwg": "^0.53.0",
 		"@huggingface/transformers": "^3.8.1",
 		"kokoro-js": "^1.2.1"
 	},
@@ -134,7 +138,7 @@
 		}
 	},
 	"devDependencies": {
-		"@datamoc/mwg": "0.52.1",
+		"@datamoc/mwg": "0.53.0",
 		"@huggingface/transformers": "^3.8.1",
 		"@types/node": "^26.6.5",
 		"esbuild": "^0.28.2",

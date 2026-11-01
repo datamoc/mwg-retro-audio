@@ -8,9 +8,21 @@
 export * from './region.ts';
 export * from './chips/index.ts';
 export * from './driver/index.ts';
+export * from './effects/index.ts';
 export * from './formats/index.ts';
 export * from './players/Player.ts';
 export { PSGVoice } from './players/PSGVoice.ts';
+export {
+	RetroVoice,
+	noteToFrequency,
+	retroSequencer,
+	retroVoice,
+	type RetroNote,
+	type RetroSequence,
+	type RetroSequenceOptions,
+	type RetroVoiceChip,
+	type RetroVoiceOptions,
+} from './players/RetroVoice.ts';
 export { TrackerPlayer, type TrackerStep } from './players/TrackerPlayer.ts';
 export * from './sfx/index.ts';
 export * from './speech/index.ts';

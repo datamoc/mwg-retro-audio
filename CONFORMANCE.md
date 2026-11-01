@@ -210,6 +210,52 @@ du dépôt (**T**/**H**).
 | Critère : laser, explosion, bonus (arpège), voix PCM en < 20 lignes, sur AY / SN76489 / NES / SID     | Complet                                            | T      |                                                                                                                                                                                                                                                 |
 | Critère : même banque en PAL et NTSC aux normes                                                       | Complet                                            | T      | rapport d'horloge vérifié                                                                                                                                                                                                                       |
 
+## Effets rétro dynamiques et voix (demande du 2026-11-01)
+
+Demande d'origine : note `dynamic-audio-three-projects.md` §2, dans le dossier de travail `4MWG`. Les presets sont **stylistiques** : ils donnent à un signal déjà synthétisé ou échantillonné le grain
+d'un petit haut-parleur, d'un convertisseur bas de gamme ou d'un échantillonneur-bloqueur d'époque ; ce ne
+sont pas des mesures d'émulateur.
+
+| Exigence | Niveau | Vérif. | Remarque |
+| --- | --- | --- | --- |
+| `retroVoice({ chip, context, destination })` : `setFrequency`, `setVolume`, `stop` | Complet | T | construit sur `PSGVoice` ; `chip` choisit la forme d'onde (`ay`, `nes`, `sid`, `gameboy`, …) |
+| Séquenceur de notes `[{ note, at, duration }]`, boucle, arrêt | Complet | T (horloge simulée) | `playNotes` / `retroSequencer` ; ordonnancement sur l'horloge Audio, deux passes d'avance en boucle |
+| Presets nommés `retroEffects('nes')`, `'sid'`, `'gameboy'`, `'mega-drive'`, `'adlib'`, `'pc-speaker'`, `'atari-st'`, `'bitcrush'`, `'lofi'`, `'none'` | Complet | T | données gelées, validées ; un preset personnalisé passe par les mêmes contrôles |
+| Chaîne Web Audio en direct : passe-haut, échantillonneur-bloqueur, bitcrush/CAC, passe-bas, gain | Complet | T (faux Web Audio) | `createRetroEffectChain` ; `setPreset` retune sans recâbler ; `dispose` débranche tout |
+| Réduction de fréquence d'échantillonnage sans `AudioWorklet` | Partiel | T | `ScriptProcessorNode` (déprécié, fil principal) ; un contexte sans ce nœud omet l'étage et le déclare dans `omitted` |
+| Passe hors ligne déterministe | Complet | T | `processRetroEffects` ; réutilise `OutputStage` (quantification, bande morte, biquad, gain) |
+| Preset sur un bruitage ordinaire rendu hors ligne | Complet | T | `renderSfx(définition, secondes, { effects: 'gameboy' })` |
+| Preset sur un SE ordinaire joué par `AudioBus` | Complet | T | `retroEffectsLoader(base, preset)` traite chaque buffer décodé ; un flux BGM/BGS n'a pas de buffer entier et reste hors de ce chemin |
+| Rendu dans un vrai contexte Web Audio | Complet | Chrome headless (OfflineAudioContext) | les 10 presets rendent un signal non nul, sans étage omis ; les mesures de croisements de zéro et d'énergie haute fréquence diffèrent entre presets. Écoute humaine non réalisée |
+| `retroEffectsFor(channel, preset)` dans `./mwg` | Complet avec mwg 0.53.0 | T | utilise `Channel.insert` / `removeInsert` (0.53) pour insérer les nœuds de la chaîne dans l'ordre ; un hôte qui expose `insertEffect(chain)` / `removeEffect(chain)` est utilisé directement, et une destination inscriptible reste le repli pour les versions antérieures |
+| Filtre par type sur `AudioBus` (BGM/BGS/ME/SE) | Partiel | — | mwg 0.53 fournit `AudioBus.setFilter(kind, spec)` pour un biquad ; la chaîne rétro multi-étages reste attachée à un `Channel` |
+| Réverbération, chorus, distorsion génériques | Volontairement absent | — | ce sont des primitives de `@datamoc/mwg`, pas l'identité de la bibliothèque rétro |
+
+### Ce que chaque preset change, et ce qu'il ne change pas
+
+| Preset | Change | Ne change pas / ne modélise pas |
+| --- | --- | --- |
+| `none` | rien | — |
+| `nes` | échantillonneur-bloqueur 22,05 kHz, 8 bits, passe-bas 14 kHz à 2 pôles | les canaux APU (pulse, triangle, bruit, DMC), la démodulation RF, le haut-parleur du téléviseur |
+| `sid` | échantillonneur-bloqueur 16 kHz, 8 bits, passe-bas 8 kHz à 2 pôles (Q = 1) | les modes de filtre SID, l'enveloppe ADSR, la dérive analogique |
+| `gameboy` | échantillonneur-bloqueur 12 kHz, 4 bits, passe-bas 6 kHz | les DAC séparés des canaux, le petit haut-parleur |
+| `mega-drive` | CAC 9 bits, bande morte de 1 %, passe-bas 3,39 kHz | l'échelle de conversion du YM2612 échantillon par échantillon, l'ampli casque |
+| `adlib` | CAC 9 bits, bande morte de 0,4 %, passe-bas 16 kHz | la synthèse FM OPL elle-même |
+| `pc-speaker` | passe-haut 300 Hz (bloqueur DC du premier ordre), passe-bas 5 kHz à 2 pôles | la modulation 1 bit/PWM, le haut-parleur exact |
+| `atari-st` | passe-haut 14 Hz, passe-bas 15 kHz | l'égalisation du moniteur |
+| `bitcrush` | 6 bits, échantillonneur-bloqueur 11,025 kHz | aucun filtre |
+| `lofi` | 8 bits, échantillonneur-bloqueur 16 kHz, passe-bas 8 kHz | aucun modèle de machine précis |
+
+Limites générales de cette section : la réduction de fréquence passe par un nœud déprécié et ne couvre pas
+les contextes qui ne l'exposent pas ; le passe-haut hors ligne est un bloqueur DC du premier ordre, pas le
+biquad résonant de la chaîne en direct ; `retroVoice` est monophonique, sans enveloppe par note au-delà du
+tout-ou-rien et sans largeur d'impulsion ; les filtres et la quantification peuvent dépasser 1 en crête sur un
+signal déjà proche de la pleine échelle (mesuré jusqu'à environ 2 sur une onde carrée) : garder de la marge ou
+baisser le `gain` du preset ; les presets n'ont pas été comparés à un enregistrement matériel et n'ont pas été
+écoutés par le mainteneur — `npx tsx tools/render-effects.ts` écrit un WAV par preset pour une écoute manuelle. `retroSfxBackend` n'est pas modifié : il joue les définitions sur la puce de musique, sans
+post-traitement ; pour appliquer un preset à un bruitage, le rendre avec `renderSfx(..., { effects })`, le faire
+passer par `retroEffectsFor` sur un `Channel`, ou envelopper le chargeur du bus avec `retroEffectsLoader`.
+
 ## Section 7 : premiers PC et cartes son
 
 | Exigence                                                              | Niveau                                                | Vérif.           | Remarque                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |

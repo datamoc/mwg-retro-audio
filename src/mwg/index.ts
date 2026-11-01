@@ -20,3 +20,11 @@ export { registerRetroWorkerMidiEngines } from './workerEngines.ts';
 export { InstrumentMidiSynth, instrumentEngineName, instrumentMidiEngines } from './instrumentEngines.ts';
 export { retroLoadFor, retroOutputFor, retroSfxEngineOptionsFor } from './settings.ts';
 export { retroSfxBackend, toMwgSfxDefinition, type RetroSfxBackendOptions } from './sfxBackend.ts';
+export {
+	retroEffectsFor,
+	retroEffectsLoader,
+	type RetroEffectHost,
+	type RetroEffectsForOptions,
+	type RetroEffectsHandle,
+	type RetroEffectsTarget,
+} from './effects.ts';

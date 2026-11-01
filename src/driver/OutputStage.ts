@@ -100,6 +100,8 @@ export interface OutputStageOptions {
 	lowpass?: number;
 	/** order of the low-pass: 1 = one biquad (12 dB/oct), 2 = two in series (24 dB/oct); default 1 */
 	lowpassOrder?: 1 | 2;
+	/** resonance of the low-pass sections, 0.707 when omitted */
+	lowpassQ?: number;
 	/** remove the DC component (default false) */
 	dcBlock?: boolean;
 	/** DC blocker cut-off in Hz (default 5) */
@@ -125,6 +127,7 @@ export class OutputStage {
 		this.opts = {
 			lowpass: options.lowpass ?? 0,
 			lowpassOrder: options.lowpassOrder ?? 1,
+			lowpassQ: options.lowpassQ ?? Math.SQRT1_2,
 			dcBlock: options.dcBlock ?? false,
 			dcCutoff: options.dcCutoff ?? 5,
 			dacBits: options.dacBits ?? 0,
@@ -135,7 +138,7 @@ export class OutputStage {
 			const chain: BiquadLowpass[] = [];
 			if (this.opts.lowpass > 0) {
 				for (let i = 0; i < this.opts.lowpassOrder; i++)
-					chain.push(new BiquadLowpass(sampleRate, this.opts.lowpass));
+					chain.push(new BiquadLowpass(sampleRate, this.opts.lowpass, this.opts.lowpassQ));
 			}
 			this.filters.push(chain);
 			this.dc.push(new DcBlocker(sampleRate, this.opts.dcCutoff));
